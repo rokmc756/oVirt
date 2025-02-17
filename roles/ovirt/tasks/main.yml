@@ -1,0 +1,83 @@
+---
+- name: Check OS ( OKD )
+  fail: msg="Not a Red Hat or SuSE based system!"
+  when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or  ansible_os_family != 'Rocky'
+
+
+- name: Set Facts For Network and Packages Informations
+  import_tasks: set-okd-facts.yml
+  tags: install, uninstall, deploy, destory, setup, remove
+  when: inventory_hostname not in groups['dns']
+
+
+- name: Setup DNS Zone and Record
+  import_tasks: dns/setup-freeipa.yml
+  tags: setup, create, install
+  when: ( dns is defined and dns == true ) and inventory_hostname in groups['dns']
+
+
+- name: Import OKD Network Playbook
+  import_tasks: network/main.yml
+  tags: setup, remove
+  when: ( network is defined and network == true ) and inventory_hostname not in groups['dns']
+
+
+- name: Deploy OKD Manager
+  import_tasks: deploy-mgr.yml
+  tags: deploy, setup, install
+  when: ( mgr is defined and mgr == true ) and inventory_hostname in groups['manager']
+
+
+- name: Install OKD Install Cleint
+  import_tasks: install-client.yml
+  tags: setup, install
+  when: ( client is defined and client == true ) and inventory_hostname in groups['manager']
+
+
+- name: Deploy CoreOS BootStrap
+  import_tasks: deploy-bootstrap.yml
+  tags: deploy, setup, install
+  when: ( bootstrap is defined and bootstrap == true ) and inventory_hostname in groups['_bootstrap']
+
+
+- name: Deploy CoreOS Master
+  import_tasks: deploy-master.yml
+  tags: deploy, setup, install
+  when: ( master is defined and master == true ) and inventory_hostname in groups['master']
+
+
+- name: Deploy CoreOS Worker
+  import_tasks: deploy-worker.yml
+  tags: deploy, setup, install
+  when: ( worker is defined and worker == true ) and inventory_hostname in groups['compute']
+
+
+- name: Uninstall OKD Install Cleint
+  import_tasks: uninstall-client.yml
+  tags: remove, uninstall
+  when: ( client is defined and client == true ) and inventory_hostname in groups['manager']
+
+
+- name: Destroy OKD Manager
+  import_tasks: destroy-mgr.yml
+  tags: destroy, remove, delete, uninstall
+  when: ( mgr is defined and mgr == true ) and inventory_hostname in groups['manager']
+
+
+- name: Setup NTP Service
+  import_tasks: ext/setup-chrony.yml
+  tags: setup, install
+  when: ( ntp is defined and ntp == true )
+
+
+- name: Back to CentOS
+  import_tasks: ext/back-to-centos.yml
+  tags: rollback, return
+  when: ( centos is defined and centos == true ) and ( inventory_hostname not in groups['dns'] and inventory_hostname not in groups['manager'] )
+
+
+- name: Remove DNS Zone and Record
+  import_tasks: dns/remove-freeipa.yml
+  tags: remove, delete, uninstall
+  when: ( dns is defined and dns == true ) and inventory_hostname in groups['dns']
+
