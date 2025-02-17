@@ -1,0 +1,7 @@
+---
+- name: Uninstall oVirt Package
+  package:
+    name: ovirt-engine
+    state: absent
+  register: uninstall_ovirt_pkgs
+

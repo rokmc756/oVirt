@@ -1,6 +1,6 @@
-# CREATE USER <hive_user> WITH ENCRYPTED PASSWORD '<hive_pwd>';
-# CREATE DATABASE <hive_db> OWNER <hive_user>;
-# Where <hive_user>, <hive_pwd> and <hive_db> are the values of your choice.
+# CREATE USER <ovirt_user> WITH ENCRYPTED PASSWORD '<ovirt_pwd>';
+# CREATE DATABASE <ovirt_db> OWNER <ovirt_user>;
+# Where <ovirt_user>, <ovirt_pwd> and <ovirt_db> are the values of your choice.
 
 - name: Install Psycopg2-Binary Pip module
   become_user: postgres
@@ -11,31 +11,33 @@
 
 - name: Create the Database Specified in Vars
   become_user: postgres
-  postgresql_db: name={{ _hive.pgsql.db_name }}
+  postgresql_db: name={{ item }}
        template='template0'
        state=present
        login_unix_socket=/tmp
   register: database_created
   vars:
     ansible_python_interpreter: "/usr/bin/python3"
+  with_items: "{{ _ovirt.pgsql.db_name }}"
 
 
 - name: Ensure User has Access to the New Database
   become_user: postgres
-  postgresql_user: db={{ _hive.pgsql.db_name }}
-       name={{ _hive.pgsql.db_user }}
-       password={{ _hive.pgsql.db_password }}
+  postgresql_user: db={{ item }}
+       name={{ _ovirt.pgsql.db_user }}
+       password={{ _ovirt.pgsql.db_password }}
        priv=ALL
        state=present
        login_unix_socket=/tmp
   register: user_created
   vars:
     ansible_python_interpreter: "/usr/bin/python3"
+  with_items: "{{ _ovirt.pgsql.db_name }}"
 
 
 - name: Ensure User does not Have Unnecessary Permissions
   become_user: postgres
-  postgresql_user: name={{ _hive.pgsql.db_user }}
+  postgresql_user: name={{ _ovirt.pgsql.db_user }}
        role_attr_flags=SUPERUSER,CREATEDB,CREATEROLE,INHERIT,LOGIN,REPLICATION
        state=present
        login_unix_socket=/tmp
@@ -43,6 +45,22 @@
   vars:
     ansible_python_interpreter: "/usr/bin/python3"
 
+
+- name: Create UUID OSSP Extension
+  postgresql_ext:
+    login_host: "{{ _ipaddr }}"
+    login_user: "{{ _ovirt.pgsql.db_user }}"
+    login_password: "{{ _ovirt.pgsql.db_password }}"
+    name: "uuid-ossp"
+    db: "{{ item }}"
+    cascade: true
+    state: present
+  vars:
+    ansible_python_interpreter: "/usr/bin/python3"
+  with_items: "{{ _ovirt.pgsql.db_name }}"
+
+
+#  Grafana database user [ovirt_engine_history_grafana]:ovirt_user
 
 # role_attr_flags=NOSUPERUSER,NOCREATEDB
 # role_attr_flags

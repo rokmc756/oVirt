@@ -6,9 +6,9 @@
   register: install_psycopg2_pip_module
 
 
-- name: Drop the Hive Database
+- name: Drop the oVirt Database
   become_user: postgres
-  postgresql_db: name={{ _hive.pgsql.db_name }}
+  postgresql_db: name={{ _ovirt.pgsql.db_name }}
        template='template0'
        state=absent
        login_unix_socket=/tmp
@@ -17,9 +17,9 @@
     ansible_python_interpreter: "/usr/bin/python3"
 
 
-- name: Create the Hive Database
+- name: Create the oVirt Database
   become_user: postgres
-  postgresql_db: name={{ _hive.pgsql.db_name }}
+  postgresql_db: name={{ _ovirt.pgsql.db_name }}
        template='template0'
        state=present
        login_unix_socket=/tmp

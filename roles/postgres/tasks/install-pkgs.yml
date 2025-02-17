@@ -34,5 +34,6 @@
     - postgresql
     - postgresql-server
     - postgresql-jdbc
+    - postgresql-contrib
     - python3-psycopg2
 

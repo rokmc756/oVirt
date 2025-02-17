@@ -21,6 +21,7 @@
     - postgresql
     - postgresql-server
     - postgresql-jdbc
+    - postgresql-contrib
   vars:
     ansible_python_interpreter: "{{ yum_python_version }}"
 

@@ -1,8 +1,4 @@
 ---
-- name: Install NFS Client Packages
-  package: name={{ nfs_client_pkg_name }} state=present
-
-
 - name: Create Directory to Mount NFS
   file:
     path: "{{ item.mount_dir }}"

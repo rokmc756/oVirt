@@ -1,3 +1,4 @@
+---
 _pgsql:
   major_version: 15
   minor_version: 5
@@ -34,14 +35,6 @@ _ssl:
   ssl_common_name: "jtest.pivotal.io"
   ssl_email: "jomoon@pivotal.io"
   enable: true
-
-
-_hive:
-  data_path: "/var/lib/postgresql/data"
-  pgsql:
-    db_name: hive_testdb
-    db_user: hive_user
-    db_password: changeme
 
 
 _firewall_ports:

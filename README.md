@@ -227,8 +227,20 @@ Disable centos-ceph-pacific repository
 [ INFO  ] ok: [localhost]
 ```
 
+### Postgres Options Required when using Remote Database
+```
+[ ERROR ]
+         Please note the following required changes in postgresql.conf on '192.168.2.175':
+           'autovacuum_vacuum_scale_factor' is currently '0.2'. It is required to be at most '0.01'.
+           'autovacuum_analyze_scale_factor' is currently '0.1'. It is required to be at most '0.075'.
+           'autovacuum_max_workers' is currently '3'. It is required to be at least '6'.
+           'work_mem' is currently '4096'. It is required to be at least '8192'.
+           'max_connections' is currently '100'. It is required to be at least '150'.
+         postgresql.conf is usually in /var/lib/pgsql/data,  or somewhere under /etc/postgresql* . You have to restart PostgreSQL after making these changes.
+```
 
-### Prepare CentOS
+
+### Prepare CentOS for Hosted Engine
 1) yum repo
 mirror -> valut
 disable ceph repo

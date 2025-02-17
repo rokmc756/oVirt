@@ -34,8 +34,3 @@
 - debug: msg={{ delete_nfs_dir }}
   when: print_debug == true
 
-
-- name: Uninstall NFS Client Packages
-  package: name={{ nfs_client_pkg_name }} state=absent
-
-

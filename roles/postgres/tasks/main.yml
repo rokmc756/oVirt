@@ -28,6 +28,12 @@
   when: (( postgres is defined and postgres == true ) or ( postgres_all is defined and postgres_all == true )) and inventory_hostname in groups['database']
 
 
+- name: Add Postgres Parameters for oVirt
+  import_tasks: change-ovirt-parameters.yml
+  tags: add, install
+  when: (( ovirt is defined and ovirt == true ) or ( postgres_all is defined and postgres_all == true )) and inventory_hostname in groups['database']
+
+
 - name: Enable SSL for Single Postgres
   import_tasks: enable-ssl.yml
   tags: enable, install
@@ -46,10 +52,10 @@
   when: ( postgres_all is defined and postgres_all == true ) and inventory_hostname in groups['database']
 
 
-- name: Recreate Hive Database
-  import_tasks: recreate-hive-db.yml
+- name: Recreate oVirt Database
+  import_tasks: recreate-ovirt-db.yml
   tags: recreate, uninstall
-  when: ( hivedb is defined and hivedb == true ) and inventory_hostname in groups['database']
+  when: ( db is defined and db == true ) and inventory_hostname in groups['database']
 
 
 - name: Uninstall RPM Packages for PostgreSQL

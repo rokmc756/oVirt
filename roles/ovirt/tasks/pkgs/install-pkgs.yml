@@ -1,0 +1,7 @@
+---
+- name: Install oVirt Package
+  package:
+    name: ovirt-engine
+    state: present
+  register: install_ovirt_pkgs
+

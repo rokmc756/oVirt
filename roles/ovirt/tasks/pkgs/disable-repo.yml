@@ -1,0 +1,36 @@
+---
+- name: Rollback Repository Configurations File for Rocky 9.x
+  replace:
+    path: "/etc/yum.repos.d/CentOS-{{ item.fn }}.repo"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.line }}"
+    backup: "{{ item.backup }}"
+  register: rollback_required_config
+  with_items:
+    - { fn: "oVirt-4.5",           regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "Storage-common",      regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "OpenStack-yoga",      regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "Messaging-rabbitmq",  regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "NFV-OpenvSwitch",     regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "Ceph-Pacific",        regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "Gluster-10",          regexp: "9-stream",  line: "$stream",  backup: no }
+    - { fn: "OpsTools",            regexp: "9-stream",  line: "$stream",  backup: no }
+  when: ansible_os_family == 'Rocky' and ansible_distribution_major_version|int == 9
+
+
+- name: Uninstall oVirt Engine Package Repository
+  package:
+    name: centos-release-ovirt45
+    state: present
+  register: uninstall_ovirt_repo_pkgs
+- debug: msg={{ uninstall_ovirt_repo_pkgs }}
+  when: print_debug == true
+
+
+- name: Update Caches for DNF Packages
+  shell: |
+    dnf makecache -y
+  register: update_dnf_cache
+- debug: msg={{ update_dnf_cache }}
+  when: print_debug == true
+

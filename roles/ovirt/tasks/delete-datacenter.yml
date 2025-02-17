@@ -1,0 +1,5 @@
+---
+- ovirt.infra.ovirt_datacenters:
+    name: mydatacenter
+    state: absent
+
