@@ -5,7 +5,7 @@ It is Ansible Playbook to deploy oVirt for Rocky/CentOS 9.x. The purpose of this
 OKD is the community distribution of Kubernetes optimized for continuous application development and multi-tenant deployment. It adds developer and operational-centric tools on top of Kubernetes, enabling rapid application development, easy deployment and scaling, and long-term lifecycle maintenance.
 
 ## oVirt Architecture
-![alt text](https://raw.githubusercontent.com/rokmc756/ovirt/main/roles/ovirt/images/ovirt-architecture-overview.png)
+![alt text](https://raw.githubusercontent.com/rokmc756/ovirt/main/roles/ovirt/images/ovirt-architecture.png)
 
 
 ## Supported Platform and OS
