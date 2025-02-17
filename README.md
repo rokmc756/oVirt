@@ -1,8 +1,8 @@
 ## What is this Ansible Playbook for oVirt
-It is Ansible Playbook to deploy oVirt for Rocky/CentOS 9.x. The purpose of this is only for development environment not production.
+It is Ansible Playbook to deploy oVirt for CentOS 9.x. The purpose of this is only for development environment not production.
 
 ## What is oVirt?
-OKD is the community distribution of Kubernetes optimized for continuous application development and multi-tenant deployment. It adds developer and operational-centric tools on top of Kubernetes, enabling rapid application development, easy deployment and scaling, and long-term lifecycle maintenance.
+oVirt is an open-source distributed virtualization solution, designed to manage your entire enterprise infrastructure. oVirt uses the trusted KVM hypervisor and is built upon several other community projects, including libvirt, Gluster, PatternFly, and Ansible.
 
 ## oVirt Architecture
 ![alt text](https://raw.githubusercontent.com/rokmc756/ovirt/main/roles/ovirt/images/ovirt-architecture.png)
