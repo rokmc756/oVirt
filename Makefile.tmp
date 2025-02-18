@@ -119,7 +119,7 @@ temp:
 		else\
 			echo "No actions to install/uninstall/deploy/destroy temp";\
 		fi;\
-	elif [ "${r}" = "setup" ] || [ "${r}" = "add" ] || [ "${r}" = "remove" ]; then\
+	elif [ "${r}" = "setup" ] || [ "${r}" = "add" ] || [ "${r}" = "remove" ] || [ "${r}" = "clean" ]; then\
 		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
 			if [ -z ${c} ];  then\
 				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-temp.yml -e '{"${s}": True}' --tags='${r}';\
@@ -129,19 +129,19 @@ temp:
 				elif [ "${c}" != "all" ]; then\
 					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-temp.yml -e '{"${s}": True}' -e '{"${c}": True}' --tags='${r}';\
 				else\
-					echo "No Component";\
+					echo "No actions to setup/add/remove/clean temp";\
 				fi\
 			else\
-					echo "No Aetup Action";\
+					echo "No actions to setup/add/remove/clean temp";\
 			fi\
 		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
 			if [ -z ${c} ];  then\
 				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-temp.yml -e '{temp_all: True}' --tags='${r}';\
 			else\
-				echo "No actions to add/setup/remove temp";\
+				echo "No actions to setup/add/remove/clean temp";\
 			fi\
 		else\
-			echo "No actions to add/setup/remove temp";\
+			echo "No actions to setup/add/remove/clean temp";\
 		fi;\
 	elif [ "${r}" = "fetch" ] || [ "${r}" = "disfetch" ] || [ "${r}" = "rollback" ] || [ "${r}" = "return" ]; then\
 		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\

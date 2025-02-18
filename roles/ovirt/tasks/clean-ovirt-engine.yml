@@ -1,0 +1,15 @@
+---
+- name: Clean Ovirt Engine
+  shell: |
+    engine-clean --config={{ _ovirt.base_path }}/ovirt-install/ovirt-engine-answer.txt
+  register: run_engine_clean
+  ignore_errors: true
+- debug: msg={{ run_engine_clean }}
+  when: print_debug == true
+
+
+- name: Delete oVirt Engine Answer Directory
+  file:
+    path: "{{ _ovirt.base_path }}/ovirt-install"
+    state: absent
+

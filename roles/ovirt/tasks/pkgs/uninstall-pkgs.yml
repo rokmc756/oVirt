@@ -1,7 +1,11 @@
 ---
 - name: Uninstall oVirt Package
   package:
-    name: ovirt-engine
+    name: "{{ item }}"
     state: absent
   register: uninstall_ovirt_pkgs
+  with_items:
+    - ovirt-engine
+    - httpd
+
 

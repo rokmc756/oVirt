@@ -1,0 +1,29 @@
+---
+- name: Create oVirt Engine Answer Directory
+  file:
+    path: "{{ _ovirt.base_path }}/ovirt-install"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+
+- name: Copy oVirt Engine Answer File
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ _ovirt.base_path }}/ovirt-install/ovirt-engine-answer.txt"
+    mode: 0644
+  register: copy_ovirt_engine_answer
+  with_items:
+    - "ovirt-engine-answer.txt.nossl.psql"
+- debug: msg={{ copy_ovirt_engine_answer }}
+
+
+- name: Setup Ovirt Engine
+  shell: |
+    engine-setup --config={{ _ovirt.base_path }}/ovirt-install/ovirt-engine-answer.txt
+  register: run_engine_setup
+  ignore_errors: true
+- debug: msg={{ run_engine_setup }}
+  when: print_debug == true
+
