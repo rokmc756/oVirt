@@ -145,6 +145,20 @@ $ make iscsi r=delete s=initiator
 $ make iscsi r=delete s=target
 ```
 
+## Configure oVirt Ansible Collection
+```
+$ ansible-galaxy collection install ovirt.ovirt
+$ ansible-galaxy collection list | grep ovirt
+ovirt.ovirt                              3.2.0
+
+$ vi roles/ovirt/meta/main.yml
+---
+collections:
+  - ovirt.ovirt
+```
+
+
+
 ## References
 - https://computingforgeeks.com/how-to-install-ovirt-engine-on-centos-stream/
 - https://www.server-world.info/en/note?os=CentOS_Stream_9&p=ovirt45&f=1
@@ -239,6 +253,12 @@ Disable centos-ceph-pacific repository
          postgresql.conf is usually in /var/lib/pgsql/data,  or somewhere under /etc/postgresql* . You have to restart PostgreSQL after making these changes.
 ```
 
+### oVirt Engine Web UI not Responding
+- It was resolved by DNS Config in Desktop Rebooted and dns cache may be deleted
+
+### iSCSI Login Problem
+- In case woring iqn of iscsi target in /etc/iscsi/initiatorname.iscsi, it would be failed to create iscsi storage domain.
+If there are nothing in /etc/iscsi directory, vdsm create new initiatorname.iscsi. So, make empty directory to /etc/iscsi in order to solve this problem.
 
 ### Prepare CentOS for Hosted Engine
 1) yum repo

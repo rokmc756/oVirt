@@ -1,7 +1,12 @@
 ---
-- ovirt.infra.ovirt_datacenters:
+- ovirt_datacenter:
     name: mydatacenter
     local: True
-    compatibility_version: 4.5
-    quota_mode: enabled
+    compatibility_version: 4.4
+    quota_mode: disabled
+    auth:
+      hostname: "co9-node01.jtest.pivotal.io"
+      username: "admin@ovirt@internalsso"
+      password: "changeme"
+      insecure: true
 

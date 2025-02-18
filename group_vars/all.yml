@@ -46,6 +46,7 @@ _ovirt:
       ipaddr1: "192.168.1."
       ipaddr2: "192.168.2."
   vms:
+    rk9: [ "rk9-freeipa", "rk9-node01", "rk9-node02", "rk9-node03", "rk9-node04", "rk9-node05", "rk9-node06", "rk9-node07" ]
     co9: [ "rk9-freeipa", "co9-node01", "co9-node02", "co9-node03", "co9-node04", "co9-node05", "co9-node06", "co9-node07" ]
     ubt24: [ "rk9-freeipa", "ubt24-node01", "ubt24-node02", "ubt24-node03", "ubt24-node04", "ubt24-node05" ]
 

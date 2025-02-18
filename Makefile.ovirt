@@ -1,0 +1,190 @@
+ovirt:
+	@if [ "${r}" = "init" ] || [ "${r}" = "uninit" ] || [ "${r}" = "reinit" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to init/uninit/reinit ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to init/uninit/reinit ovirt";\
+			fi\
+		else\
+			echo "No actions to init/uninit/reinit ovirt";\
+		fi;\
+	elif [ "${r}" = "prepare" ] || [ "${r}" = "format" ] || [ "${r}" = "clean" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to prepare/format/clean ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to prepare/format/clean ovirt";\
+			fi\
+		else\
+			echo "No actions to prepare/format/clean ovirt";\
+		fi;\
+	elif [ "${r}" = "create" ] || [ "${r}" = "recreate" ] || [ "${r}" = "copy" ] || [ "${r}" = "delete" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			elif [ ! -z ${c} ];  then\
+				if [ "${c}" = "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{ovirt_all: True}' --tags='${r}';\
+				elif [ "${c}" != "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{"${c}": True}' --tags='${r}';\
+				else\
+					echo "No setup action";\
+				fi\
+			else\
+				echo "No actions to create/copy/delete ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to create/copy/delete ovirt";\
+			fi\
+		else\
+			echo "No actions to create/copy/delete ovirt";\
+		fi;\
+	elif [ "${r}" = "bootstrap" ] || [ "${r}" = "start" ] || [ "${r}" = "stop" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to bootstrap/start/stop ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to bootstrap/start/stop ovirt";\
+			fi\
+		else\
+			echo "No actions to bootstrap/start/stop ovirt";\
+		fi;\
+	elif [ "${r}" = "enable" ] || [ "${r}" = "disable" ] || [ "${r}" = "config" ] || [ "${r}" = "change" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to enable/disable/config/change ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to enable/disable/config/change ovirt";\
+			fi\
+		else\
+			echo "No actions to enable/disable/config/change ovirt";\
+		fi;\
+	elif [ "${r}" = "upload" ] || [ "${r}" = "download" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to upload/download ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to upload/download ovirt";\
+			fi\
+		else\
+			echo "No actions to upload/download ovirt";\
+		fi;\
+	elif [ "${r}" = "install" ] || [ "${r}" = "uninstall" ] || [ "${r}" = "deploy" ] || [ "${r}" = "destroy" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to install/uninstall/deploy/destroy ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to install/uninstall/deploy/destroy ovirt";\
+			fi\
+		else\
+			echo "No actions to install/uninstall/deploy/destroy ovirt";\
+		fi;\
+	elif [ "${r}" = "setup" ] || [ "${r}" = "add" ] || [ "${r}" = "remove" ] || [ "${r}" = "clean" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			elif [ ! -z ${c} ];  then\
+				if [ "${c}" = "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{ovirt_all: True}' --tags='${r}';\
+				elif [ "${c}" != "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{"${c}": True}' --tags='${r}';\
+				else\
+					echo "No actions to setup/add/remove/clean ovirt";\
+				fi\
+			else\
+					echo "No actions to setup/add/remove/clean ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to setup/add/remove/clean ovirt";\
+			fi\
+		else\
+			echo "No actions to setup/add/remove/clean ovirt";\
+		fi;\
+	elif [ "${r}" = "fetch" ] || [ "${r}" = "disfetch" ] || [ "${r}" = "rollback" ] || [ "${r}" = "return" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			elif [ ! -z ${c} ];  then\
+				if [ "${c}" = "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{ovirt_all: True}' --tags='${r}';\
+				elif [ "${c}" != "all" ]; then\
+					ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' -e '{"${c}": True}' --tags='${r}';\
+				else\
+					echo "No Component";\
+				fi\
+			else\
+				echo "No actions to fetch/disfetch/rollback/return ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to fetch/disfetch/rollback/return ovirt";\
+			fi\
+		else\
+			echo "No actions to fetch/disfetch/rollback/return ovirt";\
+		fi;\
+	elif [ "${r}" = "upgrade" ] || [ "${r}" = "downgrade" ]; then\
+		if [ ! -z ${r} ] && [ "${s}" != "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{"${s}": True}' --tags='${r}';\
+			else\
+				echo "No actions to upgrade/downgrade ovirt";\
+			fi\
+		elif [ ! -z ${r} ] && [ "${s}" = "all" ]; then\
+			if [ -z ${c} ];  then\
+				ansible-playbook --ssh-common-args='-o UserKnownHostsFile=./known_hosts' -u ${USERNAME} setup-ovirt.yml -e '{ovirt_all: True}' --tags='${r}';\
+			else\
+				echo "No actions to upgrade/downgrade ovirt";\
+			fi\
+		else\
+			echo "No actions to upgrade/downgrade ovirt";\
+		fi;\
+	else\
+		echo "No actions to ovirt role";\
+		exit;\
+	fi
+

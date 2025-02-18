@@ -6,7 +6,7 @@
 
 - name: Set Facts For Network and Packages Informations
   import_tasks: set-ovirt-facts.yml
-  tags: install, uninstall, deploy, destory, setup, remove, enable, disable, create, delete
+  tags: install, uninstall, deploy, destory, setup, remove, enable, disable, create, delete, add
   when: inventory_hostname in groups['ovirt']
 
 
@@ -15,28 +15,28 @@
   when: ( repo is defined and repo == true ) or ( pkgs is defined and pkgs == true )
 
 
-#- name: Enable oVirt Repository
-#  import_tasks: pkgs/enable-repo.yml
-#  tags: enable, setup, install
-#  when: ( repo is defined and repo == true ) and inventory_hostname in groups['ovirt']
+- name: Create DataCenter
+  import_tasks: create-datacenter.yml
+  tags: create, install
+  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
 
 
-#- name: Install oVirt Packages
-#  import_tasks: pkgs/install-pkgs.yml
-#  tags: install, setup
-#  when: ( pkgs is defined and pkgs == true ) and inventory_hostname in groups['engine']
+- name: Add Hosts
+  import_tasks: add-hosts.yml
+  tags: add, install
+  when: ( host is defined and host == true ) and inventory_hostname in groups['engine']
 
 
-#- name: Create DataCenter
-#  import_tasks: create-datacenter.yml
-#  tags: create, install
-#  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
+- name: Remove Hosts
+  import_tasks: remove-hosts.yml
+  tags: remove, uninstall
+  when: ( host is defined and host == true ) and inventory_hostname in groups['engine']
 
 
-#- name: Delete DataCenter
-#  import_tasks: delete-datacenter.yml
-#  tags: delete, uninstall
-#  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
+- name: Delete DataCenter
+  import_tasks: delete-datacenter.yml
+  tags: delete, uninstall
+  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
 
 
 - name: Setup Ovirt Engine
@@ -49,18 +49,6 @@
   import_tasks: clean-ovirt-engine.yml
   tags: clean, destroy, uninstall
   when: ( engine is defined and engine == true ) and inventory_hostname in groups['engine']
-
-
-#- name: Uninstall oVirt Packages
-#  import_tasks: pkgs/uninstall-pkgs.yml
-#  tags: uninstall, remove
-#  when: ( pkgs is defined and pkgs == true ) and inventory_hostname in groups['engine']
-
-
-#- name: Disable oVirt Repository
-#  import_tasks: pkgs/disable-repo.yml
-#  tags: disable, remove, uninstall
-#  when: ( repo is defined and repo == true ) and inventory_hostname in groups['ovirt']
 
 
 - name: Setup NTP Service

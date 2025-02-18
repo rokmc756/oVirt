@@ -1,0 +1,16 @@
+---
+- name: Add Hosts
+  ovirt_host:
+    cluster: Default
+    name: co9-node02
+    address: 192.168.2.172
+    password: changeme
+    override_iptables: true
+    auth:
+      hostname: "co9-node01.jtest.pivotal.io"
+      username: "admin@ovirt@internalsso"
+      password: "changeme"
+      insecure: true
+  async: 1800
+  poll: 60
+

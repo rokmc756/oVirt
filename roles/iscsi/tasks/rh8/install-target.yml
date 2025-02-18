@@ -26,19 +26,44 @@
     create {{ item.name }} {{ item.base_dir }}/{{ item.name }}.img {{ item.size }}
     cd /iscsi
     create {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.{{ item.name }}
-    cd {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.{{ item.name }}/tpg1/luns
+    cd {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.{{ item.name }}/tpg1
+    set attribute authentication=1
+    cd luns
     create /backstores/fileio/{{ item.name }}
     cd ../acls
     create {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.initiator
     cd {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.initiator
-    set auth nochap
-    set attribute generate_node_acls=1
+    set auth userid=iscsijomoon
+    set auth password=changeme
     exit
     EOF
   register: create_target_disks
   with_items: "{{ _iscsi.target.disks }}"
+#
+
+
+#- name: Create an Target Disks by TargetCLI
+#  shell: |
+#    cat << EOF | targetcli
+#    cd /backstores/fileio
+#    create {{ item.name }} {{ item.base_dir }}/{{ item.name }}.img {{ item.size }}
+#    cd /iscsi
+#    create {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.{{ item.name }}
+#    cd {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.{{ item.name }}/tpg1/luns
+#    create /backstores/fileio/{{ item.name }}
+#    cd ../acls
+#    create {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.initiator
+#    cd {{ _iscsi.target.iqn }}:{{ _iscsi.target.os_version }}.initiator
+#    set auth userid=iscsiadm
+#    set auth password=changeme
+#    exit
+#    EOF
+#  register: create_target_disks
+#  with_items: "{{ _iscsi.target.disks }}"
 # set auth userid=iscsiadm
 # set auth password=changeme
+# set auth nochap
+# set attribute generate_node_acls=1
 
 
 - name: Install PolicyCoreUtils Package

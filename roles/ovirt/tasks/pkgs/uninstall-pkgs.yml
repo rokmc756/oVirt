@@ -4,8 +4,26 @@
     name: "{{ item }}"
     state: absent
   register: uninstall_ovirt_pkgs
+  ignore_errors: true
   with_items:
-    - ovirt-engine
-    - httpd
+    - httpd-*
+    - ovirt-*
+    - postgresql-*
+    - openvswitch-*
+    - python3*-ovirt-*
 
+
+- name: Delete Remaining oVirt Engine Directory
+  file:
+    path: "/etc/{{ item }}"
+    state: absent
+  register: delete_directory
+  ignore_errors: true
+  with_items:
+    - "ovirt-engine"
+    - "ovirt-engine-dwh"
+    - "ovirt-engine-setup.conf.d"
+    - "ovirt-hosted-engine"
+    - "ovirt-provider-ovn"
+    - "ovirt-web-ui"
 
