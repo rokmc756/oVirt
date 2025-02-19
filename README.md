@@ -126,26 +126,7 @@ co9-node06      ansible_ssh_host=192.168.2.176
 co9-node07      ansible_ssh_host=192.168.2.177
 ```
 
-#### 2) Setup/Remove NFS Server and Client
-```
-$ make nfs r=setup s=server
-$ make nfs r=setup s=client
-or
-$ make nfs r=remove s=client
-$ make nfs r=remove s=server
-```
-
-#### 3) Create/Delete iSCSI Target/Initiator
-```
-$ make iscsi r=create s=target
-$ make iscsi r=create s=initiator
-
-or
-$ make iscsi r=delete s=initiator
-$ make iscsi r=delete s=target
-```
-
-## Configure oVirt Ansible Collection
+### Configure oVirt Ansible Collection
 ```
 $ ansible-galaxy collection install ovirt.ovirt
 $ ansible-galaxy collection list | grep ovirt
@@ -161,6 +142,36 @@ $ pip3 install ovirt-engine-sdk-python
 
 ```
 
+### Setup/Remove NFS Server and Client
+```
+$ make nfs r=setup s=server
+$ make nfs r=setup s=client
+or
+$ make nfs r=remove s=client
+$ make nfs r=remove s=server
+```
+
+### Create/Delete iSCSI Target/Initiator
+```
+$ make iscsi r=create s=target
+$ make iscsi r=create s=initiator
+
+or
+$ make iscsi r=delete s=initiator
+$ make iscsi r=delete s=target
+```
+
+### Create Storage Domain
+```
+$ make ovirt r=add s=nfs
+$ make ovirt r=add s=iscsi
+$ make ovirt r=add s=local
+
+or
+$ make ovirt r=remove s=local
+$ make ovirt r=remove s=iscsi
+$ make ovirt r=remove s=nfs
+```
 
 
 ## References
