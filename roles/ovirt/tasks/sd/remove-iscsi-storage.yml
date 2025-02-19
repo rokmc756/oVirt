@@ -1,0 +1,12 @@
+---
+- name: Remove iSCSI Storage Domain
+  ovirt_storage_domain:
+    name: data_iscsi
+    state: absent
+    format: true
+    auth:
+      hostname: co9-node01.jtest.pivotal.io
+      username: admin@ovirt@internalsso
+      password: changeme
+      insecure: true
+

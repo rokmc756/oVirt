@@ -1,0 +1,24 @@
+---
+- name: Add NFS Storage Domain
+  import_tasks: sd/setup-nfs-storage.yml
+  tags: add, install
+  when: ( nfs is defined and nfs == true ) and inventory_hostname in groups['engine']
+
+
+- name: Add iSCSi Storage Domain
+  import_tasks: sd/setup-iscsi-storage.yml
+  tags: add, install
+  when: ( iscsi is defined and iscsi == true ) and inventory_hostname in groups['engine']
+
+
+- name: Remove iSCSI Storage Domain
+  import_tasks: sd/remove-iscsi-storage.yml
+  tags: remove, uninstall
+  when: ( iscsi is defined and iscsi == true ) and inventory_hostname in groups['engine']
+
+
+- name: Remove NFS Storage Domain
+  import_tasks: sd/remove-nfs-storage.yml
+  tags: remove, uninstall
+  when: ( nfs is defined and nfs == true ) and inventory_hostname in groups['engine']
+

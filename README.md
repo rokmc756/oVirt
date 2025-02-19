@@ -155,6 +155,10 @@ $ vi roles/ovirt/meta/main.yml
 ---
 collections:
   - ovirt.ovirt
+
+$ dnf install -y libxml2-devel
+$ pip3 install ovirt-engine-sdk-python
+
 ```
 
 

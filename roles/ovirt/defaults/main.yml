@@ -1,6 +1,1 @@
 ---
-#- name: Use oVirt Ansible Galaxy Role
-#  ansible.builtin.include_role:
-#    name: ovirt.ovirt
-#    apply:
-#      become: true

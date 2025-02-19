@@ -27,6 +27,11 @@
   when: ( host is defined and host == true ) and inventory_hostname in groups['engine']
 
 
+- name: Import Storage Domain Playbook
+  import_tasks: sd/main.yml
+  when: ( nfs is defined and nfs == true ) or ( iscsi is defined and iscsi == true )
+
+
 - name: Remove Hosts
   import_tasks: remove-hosts.yml
   tags: remove, uninstall

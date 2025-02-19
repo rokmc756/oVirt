@@ -1,0 +1,39 @@
+---
+#- name: Connect iSCSI Target
+#  ovirt_storage_connection:
+#    storage: myiscsi
+#    address: 192.168.2.176
+#    target: iqn.2025-02.io.pivotal.jtest:co9.vdisk01
+#    username: iscsijomoon
+#    password: changeme
+#    port: 3260
+#    type: iscsi
+#    auth:
+#      hostname: co9-node01.jtest.pivotal.io
+#      username: admin@ovirt@internalsso
+#      password: changeme
+#      insecure: true
+
+
+- name: Add iSCSI Storage Domain
+  ovirt_storage_domain:
+    name: data_iscsi
+    host: co9-node03
+    data_center: Default
+    iscsi:
+      target: iqn.2025-02.io.pivotal.jtest:co9.jtest-vdisk01
+      lun_id:
+        - 1IET_000d0001
+      address: 192.168.2.176
+      username: iscsijomoon
+      password: changeme
+    # discard_after_delete: True
+    # backup: False
+    # critical_space_action_blocker: 5
+    # warning_low_space: 10
+    auth:
+      hostname: co9-node01.jtest.pivotal.io
+      username: admin@ovirt@internalsso
+      password: changeme
+      insecure: true
+

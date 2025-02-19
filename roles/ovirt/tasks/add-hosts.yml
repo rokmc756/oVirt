@@ -2,8 +2,8 @@
 - name: Add Hosts
   ovirt_host:
     cluster: Default
-    name: co9-node02
-    address: 192.168.2.172
+    name: co9-node03
+    address: 192.168.2.173
     password: changeme
     override_iptables: true
     auth:

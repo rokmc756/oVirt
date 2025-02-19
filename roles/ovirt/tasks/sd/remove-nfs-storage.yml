@@ -1,0 +1,12 @@
+---
+- name: Remove NFS Storage Domain
+  ovirt_storage_domain:
+    name: data_nfs
+    state: absent
+    format: true
+    auth:
+      hostname: co9-node01.jtest.pivotal.io
+      username: admin@ovirt@internalsso
+      password: changeme
+      insecure: true
+
