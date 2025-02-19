@@ -29,7 +29,7 @@
 
 - name: Import Storage Domain Playbook
   import_tasks: sd/main.yml
-  when: ( nfs is defined and nfs == true ) or ( iscsi is defined and iscsi == true )
+  when: ( nfs is defined and nfs == true ) or ( iscsi is defined and iscsi == true ) or ( local is defined and local == true )
 
 
 - name: Remove Hosts
