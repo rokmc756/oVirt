@@ -1,0 +1,12 @@
+---
+- name: Setup Ovirt Engine
+  import_tasks: engine/setup-ovirt-engine.yml
+  tags: setup, deploy, install
+  when: inventory_hostname in groups['engine']
+
+
+- name: Clean Ovirt Engine
+  import_tasks: engine/clean-ovirt-engine.yml
+  tags: clean, destroy, uninstall
+  when: inventory_hostname in groups['engine']
+

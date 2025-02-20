@@ -1,4 +1,12 @@
 ---
+_dc:
+  - { name: jDC01, compat_ver: "4.7", desc: "Jack's oVirt KR Datacenter", local: "false", quota: "disabled" }  # local is false means Shared Datacenter
+
+
+_cluster:
+  - { name: jClu01, dc: jDC01, cpu_type: 'Intel SandyBridge Family', compat_ver: "4.7", desc: "Jack's oVirt KR Cluster" }
+
+
 _dns:
   zone:
     - { name: jtest.pivotal.io, type: forward }
@@ -20,6 +28,8 @@ _dns:
       - { name: "175",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node06.pivotal.io."  }
       - { name: "176",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node07.pivotal.io."  }
       - { name: "177",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node08.pivotal.io."  }
+
+
 _selinux:
   policy:
     - { name: httpd_can_network_connect, toggle: on }

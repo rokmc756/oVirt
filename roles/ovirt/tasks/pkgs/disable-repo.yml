@@ -20,9 +20,18 @@
 
 - name: Uninstall oVirt Engine Package Repository
   package:
-    name: centos-release-ovirt45
-    state: present
+    name: "{{ item }}"
+    state: absent
   register: uninstall_ovirt_repo_pkgs
+  with_items:
+    - "centos-release-ceph-pacific"
+    - "centos-release-gluster10"
+    - "centos-release-nfv-openvswitch"
+    - "centos-release-opstools"
+    - "centos-release-storage-common"
+    - "centos-release-openstack-yoga"
+    - "centos-release-rabbitmq-38"
+    - "centos-release-ovirt45"
 - debug: msg={{ uninstall_ovirt_repo_pkgs }}
   when: print_debug == true
 

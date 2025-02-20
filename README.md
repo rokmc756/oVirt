@@ -30,12 +30,6 @@ $ brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Libr
 $ yum install ansible
 ```
 
-## How to Deploy and Destroy oVirt
-### Download oVirt Software Binaries to Ansible Files Directory
-```
-$ make download
-
-```
 ### Setup DNS with FreeIPA
 #### 1) Configure Varialbes for DNS Zone and Records
 ```
@@ -99,7 +93,8 @@ or
 $ make okd r=remove s=dns c=all
 ```
 
-###  Setup NFS Server
+### Setup NFS Server / iSCSI Target / Postgres Database for oVirt Engine
+#### 1) Setup NFS Server
 $ vi ansible-hosts=co9
 ```
 [all:vars]
@@ -126,7 +121,7 @@ co9-node06      ansible_ssh_host=192.168.2.176
 co9-node07      ansible_ssh_host=192.168.2.177
 ```
 
-### Configure oVirt Ansible Collection
+#### 2) Configure oVirt Ansible Collection
 ```
 $ ansible-galaxy collection install ovirt.ovirt
 $ ansible-galaxy collection list | grep ovirt
@@ -142,35 +137,92 @@ $ pip3 install ovirt-engine-sdk-python
 
 ```
 
-### Setup/Remove NFS Server and Client
+### Setup Postgres Database / iSCSI Target / NFS Server
+#### 1) Install/Uninstall Postgres Database for oVirt Engine/DW Remote Database
 ```
-$ make nfs r=setup s=server
-$ make nfs r=setup s=client
-or
-$ make nfs r=remove s=client
-$ make nfs r=remove s=server
-```
-
-### Create/Delete iSCSI Target/Initiator
-```
-$ make iscsi r=create s=target
-$ make iscsi r=create s=initiator
+$ make postgres r=install s=all
 
 or
-$ make iscsi r=delete s=initiator
-$ make iscsi r=delete s=target
+$ make postgres r=uninstall s=all
 ```
 
-### Create Storage Domain
+
+#### 2) Setup/Remove iSCSI Target for oVirt iSCSI Storage Domain
 ```
-$ make ovirt r=add s=nfs
-$ make ovirt r=add s=iscsi
-$ make ovirt r=add s=local
+$ make storage r=setup s=iscsi c=target
 
 or
-$ make ovirt r=remove s=local
-$ make ovirt r=remove s=iscsi
-$ make ovirt r=remove s=nfs
+$ make storage r=remove s=iscsi c=target
+```
+
+#### 3) Setup/Remove NFS Server for oVirt NFS Storage Domain
+```
+$ make storage r=setup s=nfs c=server
+
+or
+$ make storage r=remove s=nfs c=server
+```
+
+
+### Deploy Open Virtualization
+#### 1) Enable/Disable oVirt Package Repository
+```
+$ make ovirt r=enable s=repo
+
+or
+$ make ovirt r=disable s=repo
+```
+
+#### 2) Install/Uninstall oVirt Packages
+```
+$ make ovirt r=install s=pkgs
+
+or
+$ make ovirt r=uninstall s=pkgs
+```
+
+#### 3) Setup/Remove oVirt Engine
+```
+$ make ovirt r=setup s=engine
+
+or
+$ make ovirt r=remove s=engine
+```
+
+#### 4) Create/Delete oVirt Data Center
+```
+$ make ovirt r=create s=dc
+
+or
+$ make ovirt r=delete s=dc
+```
+
+#### 5) Create/Delete oVirt Cluster
+```
+$ make ovirt r=create s=cluster
+
+or
+$ make ovirt r=delete s=cluster
+```
+
+#### 6) Add/Remove oVirt Hosts
+```
+$ make ovirt r=add s=host
+
+or
+$ make ovirt r=remove s=host
+```
+
+#### 7) Add/Remove oVirt Storage Domain
+```
+$ make storage r=add s=domain c=nfs
+$ make storage r=add s=domain c=iscsi
+$ make storage r=add s=domain c=local
+
+or
+$ make storage r=remove s=domain c=local
+$ make storage r=remove s=domain c=iscsi
+$ make storage r=remove s=domain c=nfs
 ```
 
 

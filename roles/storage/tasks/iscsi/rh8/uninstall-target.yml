@@ -33,9 +33,8 @@
   register: uninstall_iscsi_pkgs
   ignore_errors: true
   with_items:
+    - "target"
     - "policycoreutils-python-utils"
-    - "targetcli-restore"
-    - "targetcli"
 - debug: msg={{ uninstall_iscsi_pkgs }}
 
 

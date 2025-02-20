@@ -1,0 +1,44 @@
+---
+- name: Stop oVirt Engine Service
+  systemd:
+    name: ovirt-engine
+    state: stopped
+  register: stop_ovirt_engine
+  until: stop_ovirt_engine is succeeded
+  retries: 10
+  delay: 10
+
+
+- name: Create oVirt Engine Answer Directory
+  file:
+    path: "{{ _ovirt.base_path }}/ovirt-install"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+
+- name: Copy Cleanup oVirt Engine Answer File
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ _ovirt.base_path }}/ovirt-install/cleanup-ovirt-engine-answer.txt"
+    mode: 0644
+  register: copy_cleanup_ovirt_engine_answer
+  with_items:
+    - "cleanup-ovirt-engine-answer.txt"
+- debug: msg={{ copy_cleanup_ovirt_engine_answer }}
+
+
+- name: Clean Ovirt Engine
+  shell: |
+    engine-cleanup --config-append={{ _ovirt.base_path }}/ovirt-install/cleanup-ovirt-engine-answer.txt
+  register: run_engine_clean
+- debug: msg={{ run_engine_clean }}
+  when: print_debug == true
+
+
+- name: Delete oVirt Engine Answer Directory
+  file:
+    path: "{{ _ovirt.base_path }}/ovirt-install"
+    state: absent
+

@@ -7,7 +7,7 @@
 - name: Set Facts For Network and Packages Informations
   import_tasks: set-ovirt-facts.yml
   tags: install, uninstall, deploy, destory, setup, remove, enable, disable, create, delete, add
-  when: inventory_hostname in groups['ovirt']
+  when: inventory_hostname in groups['engine'] or inventory_hostname in groups['hosts']
 
 
 - name: Import Repository and Packages Playbook
@@ -15,45 +15,24 @@
   when: ( repo is defined and repo == true ) or ( pkgs is defined and pkgs == true )
 
 
-- name: Create DataCenter
-  import_tasks: create-datacenter.yml
-  tags: create, install
-  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
+- name: Import Data Center Playbook
+  import_tasks: dc/main.yml
+  when: ( dc is defined and dc == true )
 
 
-- name: Add Hosts
-  import_tasks: add-hosts.yml
-  tags: add, install
-  when: ( host is defined and host == true ) and inventory_hostname in groups['engine']
+- name: Import Cluster Playbook
+  import_tasks: cluster/main.yml
+  when: ( cluster is defined and cluster == true )
 
 
-- name: Import Storage Domain Playbook
-  import_tasks: sd/main.yml
-  when: ( nfs is defined and nfs == true ) or ( iscsi is defined and iscsi == true ) or ( local is defined and local == true )
+- name: Import Host Playbook
+  import_tasks: host/main.yml
+  when: ( host is defined and host == true )
 
 
-- name: Remove Hosts
-  import_tasks: remove-hosts.yml
-  tags: remove, uninstall
-  when: ( host is defined and host == true ) and inventory_hostname in groups['engine']
-
-
-- name: Delete DataCenter
-  import_tasks: delete-datacenter.yml
-  tags: delete, uninstall
-  when: ( dc is defined and dc == true ) and inventory_hostname in groups['engine']
-
-
-- name: Setup Ovirt Engine
-  import_tasks: setup-ovirt-engine.yml
-  tags: setup, deploy, install
-  when: ( engine is defined and engine == true ) and inventory_hostname in groups['engine']
-
-
-- name: Clean Ovirt Engine
-  import_tasks: clean-ovirt-engine.yml
-  tags: clean, destroy, uninstall
-  when: ( engine is defined and engine == true ) and inventory_hostname in groups['engine']
+- name: Import oVirt Engine Playbook
+  import_tasks: engine/main.yml
+  when: ( engine is defined and engine == true )
 
 
 - name: Setup NTP Service

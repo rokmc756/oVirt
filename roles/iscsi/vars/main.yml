@@ -1,8 +1,9 @@
+---
 _iscsi:
   target:
     iqn: "iqn.2025-02.io.pivotal.jtest"
-    user: "iscsiadm"
-    password: "changeme"
+    user: iscsiadm
+    password: changeme
     os_version: "co9"
     disks:
       - { name: "jtest-vdisk01", base_dir: "/data/iscsi01", size: "10G" }
