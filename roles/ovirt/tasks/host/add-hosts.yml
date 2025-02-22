@@ -6,10 +6,11 @@
     address: "{{ hostvars[inventory_hostname].ansible_ssh_host }}"
     password: changeme
     override_iptables: true
+    timeout: 1800
     auth: "{{ _ovirt.engine.auth }}"
   register: add_ovirt_hosts
   delegate_to: "{{ hostvars[groups['engine'][0]].ansible_ssh_host }}"
   delegate_facts: True
-  async: 3600
+  async: 1800
   poll: 60
 

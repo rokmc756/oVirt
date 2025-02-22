@@ -9,6 +9,11 @@
   when: ( iscsi is defined and iscsi == true )
 
 
+- name: Import Gluster Storage Domain Playbook
+  import_tasks: domain/gluster/main.yml
+  when: ( gluster is defined and gluster == true )
+
+
 - name: Import Local Storage Domain Playbook
   import_tasks: domain/local/main.yml
   when: ( local is defined and local == true )

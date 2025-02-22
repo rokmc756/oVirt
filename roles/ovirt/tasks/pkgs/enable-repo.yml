@@ -24,7 +24,7 @@
     - { fn: "Ceph-Pacific",        regexp: "$stream",  line: "9-stream",  backup: no }
     - { fn: "Gluster-10",          regexp: "$stream",  line: "9-stream",  backup: no }
     - { fn: "OpsTools",            regexp: "$stream",  line: "9-stream",  backup: no }
-  when: ansible_os_family == 'Rocky' and ansible_distribution_major_version|int == 9
+  # when: ansible_os_family == 'Rocky' and ansible_distribution_major_version|int == 9
 
 
 - name: Update Caches for DNF Packages

@@ -184,6 +184,8 @@ $ make ovirt r=uninstall s=pkgs
 #### 3) Setup/Remove oVirt Engine
 ```
 $ make ovirt r=setup s=engine
+$ make ovirt r=setup s=sdk
+
 
 or
 $ make ovirt r=remove s=engine
@@ -217,10 +219,12 @@ $ make ovirt r=remove s=host
 ```
 $ make storage r=add s=domain c=nfs
 $ make storage r=add s=domain c=iscsi
+$ make storage r=add s=domain c=gluster
 $ make storage r=add s=domain c=local
 
 or
 $ make storage r=remove s=domain c=local
+$ make storage r=remove s=domain c=gluster
 $ make storage r=remove s=domain c=iscsi
 $ make storage r=remove s=domain c=nfs
 ```

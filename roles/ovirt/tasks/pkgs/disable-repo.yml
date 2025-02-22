@@ -15,7 +15,7 @@
     - { fn: "Ceph-Pacific",        regexp: "9-stream",  line: "$stream",  backup: no }
     - { fn: "Gluster-10",          regexp: "9-stream",  line: "$stream",  backup: no }
     - { fn: "OpsTools",            regexp: "9-stream",  line: "$stream",  backup: no }
-  when: ansible_os_family == 'Rocky' and ansible_distribution_major_version|int == 9
+  # when: ansible_os_family == 'Rocky' and ansible_distribution_major_version|int == 9
 
 
 - name: Uninstall oVirt Engine Package Repository

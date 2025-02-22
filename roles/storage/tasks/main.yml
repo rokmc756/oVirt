@@ -21,6 +21,6 @@
 
 - name: Import Storage Domain Playbook
   import_tasks: domain/main.yml
-  when: ( domain is defined and domain == true ) and ( local is defined or iscsi is defined or nfs is defined )
+  when: ( domain is defined and domain == true ) and ( local is defined or iscsi is defined or nfs is defined or gluster is defined )
 
 
