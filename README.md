@@ -188,7 +188,7 @@ $ make ovirt r=setup s=sdk
 
 
 or
-$ make ovirt r=remove s=engine
+$ make ovirt r=clean s=engine
 ```
 
 #### 4) Create/Delete oVirt Data Center
