@@ -31,7 +31,7 @@ $ yum install ansible
 ```
 
 ### Setup NFS Server / iSCSI Target / Postgres Database for oVirt Engine
-#### 1) Setup NFS Server
+#### 1) Configure Inventory
 $ vi ansible-hosts=co9
 ```
 [all:vars]
@@ -58,7 +58,11 @@ co9-node06      ansible_ssh_host=192.168.2.176
 co9-node07      ansible_ssh_host=192.168.2.177
 ```
 
-#### 2) Configure oVirt Ansible Collection
+#### 2) Initialize Hosts to create user and ssh keys for exchaning them among all hosts
+```
+$ make hosts r=reinit s=all
+```
+#### 3) Configure oVirt Ansible Collection
 ```
 $ ansible-galaxy collection install ovirt.ovirt
 $ ansible-galaxy collection list | grep ovirt
@@ -166,17 +170,14 @@ $ make storage r=remove s=domain c=iscsi
 $ make storage r=remove s=domain c=nfs
 ```
 
-
 ## References
 - https://computingforgeeks.com/how-to-install-ovirt-engine-on-centos-stream/
 - https://www.server-world.info/en/note?os=CentOS_Stream_9&p=ovirt45&f=1
-
 
 ## Similar Playbook
 ## TODO
 ## Debugging
 ## Tracking Issues
-
 
 ## Errors
 ### Hosted Engine Setup Error
