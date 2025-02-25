@@ -65,6 +65,21 @@
   when: ansible_distribution == "openSUSE Leap" and ansible_distribution_major_version|int <=  15
 
 
+- set_fact:
+    ext_repo: "crb"
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version|int >= 9
+
+
+- set_fact:
+    ext_repo: "devel"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int >= 9
+
+
+- set_fact:
+    ext_repo: "devel"
+  when: ( ansible_distribution == "RedHat" or ansible_distribution == "CentOS" or ansible_distribution == "Rocky" ) and ansible_distribution_major_version|int < 9
+
+
 - name: Set Default Network Device and Address
   set_fact:
     netdev: "{{ netdev2 }}"

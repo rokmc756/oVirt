@@ -11,6 +11,7 @@
     - postgresql-*
     - openvswitch-*
     - python3*-ovirt-*
+    - samba-*
 
 
 - name: Delete Remaining oVirt Engine Directory

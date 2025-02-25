@@ -1,0 +1,49 @@
+---
+_dc:
+  - { name: jDC01, compat_ver: "4.7", desc: "Jack's oVirt KR Datacenter" }
+
+_cluster:
+  - { name: jClu01, dc: jDC01, cpu_type: 'Intel SandyBridge Family', compat_ver: "4.7", desc: "Jack's oVirt KR Cluster" }
+
+_network:
+  - { name: mynetwork, cluster: jClu01, dc: jDC01 }
+
+_sd:
+  nfs:
+    name: jnfs-sd01
+  iscsi:
+    name: jiscsi-sd01
+  local:
+    name: jlocal-sd01
+  gluster:
+    name: jgluster-sd01
+
+
+_gluster:
+  root_dir: "distvol01"
+
+
+#_volumes:
+#  - { name: "distvol01", brick: "/glusterfs/jbrick01", perf_cache_size: "128MB", wb: "off", qr: "on", mount_dir: "/mnt/distvol01", fn: "fs-text01.txt" }
+#  - { name: "distvol02", brick: "/glusterfs/jbrick02", perf_cache_size: "128MB", wb: "off", qr: "on", mount_dir: "/mnt/distvol02", fn: "fs-text02.txt" }
+#  - { name: "distvol03", brick: "/glusterfs/jbrick03", perf_cache_size: "128MB", wb: "off", qr: "on", mount_dir: "/mnt/distvol03", fn: "fs-text03.txt" }
+
+
+_nfs:
+  root_dir: "/ovirt-nfs-root"
+  mode: "0777"
+  client:
+    - { mount_dir: "/ovirt-nfs-mount", src: "/ovirt-nfs-root", nfs_server_ip: "{{ hostvars[groups['nfs'][0]].ansible_ssh_host }}"  }
+
+
+_iscsi:
+  target:
+    iqn: "iqn.2025-02.io.pivotal.jtest"
+    user: iscsiadm
+    password: changeme
+    os_version: "co9"
+    disks:
+      - { name: "jtest-vdisk01", base_dir: "/data/iscsi01", size: "10G" }
+      - { name: "jtest-vdisk02", base_dir: "/data/iscsi02", size: "10G" }
+      - { name: "jtest-vdisk03", base_dir: "/data/iscsi03", size: "10G" }
+

@@ -1,0 +1,11 @@
+---
+- name: Add Gluster Storage Domain
+  ovirt_storage_domain:
+    name: "{{ _sd.gluster.name }}"
+    host: "{{ hostvars[groups['hosts'][0]].ansible_hostname }}"
+    data_center: "{{ _dc[0].name }}"
+    glusterfs:
+      address: "{{ hostvars[groups['gluster'][0]].ansible_ssh_host }}"
+      path: "/{{ _gluster.root_dir }}"
+    auth: "{{ _ovirt.engine.auth }}"
+

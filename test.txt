@@ -1,0 +1,24 @@
+𝗦𝘁𝗶𝗹𝗹 𝗘𝗻𝗵𝗮𝗻𝗰𝗶𝗻𝗴 𝘁𝗲𝗰𝗵𝗻𝗶𝗰𝗮𝗹 𝘀𝗸𝗶𝗹𝗹𝘀 𝘄𝗵𝗶𝗹𝗲 𝗱𝗲𝘃𝗲𝗹𝗼𝗽𝗶𝗻𝗴 𝘃𝗮𝗿𝗶𝗼𝘂𝘀 𝗔𝗻𝘀𝗶𝗯𝗹𝗲 𝗽𝗹𝗮𝘆𝗯𝗼𝗼𝗸𝘀 𝗮𝗻𝗱 𝗰𝗼𝗻𝗳𝗶𝗴𝘂𝗿𝗶𝗻𝗴 𝗮 𝗹𝗮𝗯 𝗲𝗻𝘃𝗶𝗿𝗼𝗻𝗺𝗲𝗻𝘁 𝗳𝗼𝗿 𝗼𝗽𝗲𝗻 𝘀𝗼𝘂𝗿𝗰𝗲 𝘀𝗼𝗳𝘁𝘄𝗮𝗿𝗲 𝗱𝗲𝗽𝗹𝗼𝘆𝗺𝗲𝗻𝘁 𝘁𝗵𝗮𝘁 𝗶𝘀 𝗰𝘂𝗿𝗿𝗲𝗻𝘁𝗹𝘆 𝗽𝗿𝗼𝗺𝗶𝘀𝗶𝗻𝗴 𝗳𝗼𝗿 𝗺𝘆 𝗳𝘂𝘁𝘂𝗿𝗲 𝗰𝗮𝗿𝗲𝗲𝗿.
+
+[1] Developed Ansible automation tools to automatically configure Ceph Storage and its underlying NFS, S3, CephFS, and iSCSI services
+https://github.com/rokmc756/Ceph
+https://www.youtube.com/@FFLinux - Watch
+
+[2] Developed Ansible automation tools to automatically configure Gluster Storage and its underlying NFS, Samba, GlusterFS services
+https://github.com/rokmc756/Gluster
+
+[3] Developing Ansible automation tool to deploy rook-ceph, kubeflow, kubevirt, jenkins, harbor, argocd, awx, grafana, mongodb, mariadb, mysql, postgresql, rabbitmq, zabbix , etc. based on metallb load balancer provide by helm on Kubernetes
+https://github.com/rokmc756/KubeFarmer
+
+[4] Additional development of Ansible playbooks for automated configuration of Hive, Spark, and Hbase, a data analytics platform based on Hadoop
+https://github.com/rokmc756/Hadoop-ZKcluster
+
+[5] OpenStack Deployment with Packstack and Devstack utilizing Ansible on Ubuntu 22.x and CentOS Stream 9.x
+https://github.com/rokmc756/OpenStack
+
+[6] Still Developing an Ansible Playbook to Deploy Incus Hypervisor which is Private Micro Cloud with OVN and Various Storage Pools such as ZFS, Clustered-LVM, Ceph, etc on Ubuntu 24.x
+https://github.com/rokmc756/Incus
+
+[7] Still Developing an Ansible Playbook to Deploy oVirt which is Private Cloud with Various Storage Pools such as NFS, iSCSI, Gluster Storage Pool on CentOS Stream 9.x
+https://github.com/rokmc756/oVirt
+

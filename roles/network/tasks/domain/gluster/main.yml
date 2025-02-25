@@ -1,0 +1,18 @@
+---
+- name: Add Gluster Storage Domain
+  import_tasks: domain/gluster/setup-gluster-storage.yml
+  tags: add, setup, install
+  when: inventory_hostname in groups['engine']
+
+
+- name: Remove Gluster Storage Domain
+  import_tasks: domain/gluster/remove-gluster-storage.yml
+  tags: remove, clean, uninstall
+  when: inventory_hostname in groups['engine']
+
+
+#- name: Clean NFS Root Directory
+#  import_tasks: domain/nfs/clean-nfs-root-dir.yml
+#  tags: remove, clean, uninstall
+#  when: inventory_hostname in groups['nfs']
+

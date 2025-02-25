@@ -1,0 +1,52 @@
+---
+- name: Create Bond on eth0 and eth1 interface, and put 'myvlan' network on top of it and persist the new configuration:
+  ovirt_host_network:
+    name: myhost
+    save: yes
+    bond:
+      name: bond0
+      mode: 2
+      interfaces:
+        - eth1
+        - eth2
+    networks:
+      - name: myvlan
+        boot_protocol: static
+        address: 1.2.3.4
+        netmask: 255.255.255.0
+        gateway: 1.2.3.4
+        version: v4
+
+
+- name: Create Bond on eth1 and eth2 interface, specifying both mode and miimon:
+  ovirt_host_network:
+    name: myhost
+    bond:
+      name: bond0
+      mode: 1
+      options:
+        miimon: 200
+      interfaces:
+        - eth1
+        - eth2
+
+
+- name: Assign myvlan1 and myvlan2 vlans to host eth0 interface:
+  ovirt_host_network:
+    name: myhost
+    interface: eth0
+    networks:
+      - name: myvlan1
+      - name: myvlan2
+
+
+- name: Add custom_properties to network:
+  ovirt_host_network:
+    name: myhost
+    interface: eth0
+    networks:
+      - name: myvlan1
+        custom_properties:
+          - name: bridge_opts
+            value: gc_timer=10
+

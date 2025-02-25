@@ -1,0 +1,33 @@
+---
+- name: Remove bond0 bond from host interfaces:
+  ovirt_host_network:
+    state: absent
+    name: myhost
+    bond:
+      name: bond0
+
+
+- name: Assign myvlan1 and myvlan2 vlans to host eth0 interface:
+  ovirt_host_network:
+    name: myhost
+    interface: eth0
+    networks:
+      - name: myvlan1
+      - name: myvlan2
+
+
+- name: Remove myvlan2 vlan from host eth0 interface:
+  ovirt_host_network:
+    state: absent
+    name: myhost
+    interface: eth0
+    networks:
+      - name: myvlan2
+
+
+- name: Remove all networks/vlans from host eth0 interface
+  ovirt_host_network:
+    state: absent
+    name: myhost
+    interface: eth0
+

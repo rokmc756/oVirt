@@ -11,8 +11,8 @@ VMWARE_ROLE_CONFIG="control-vms-vmware.yml"
 KVM_BOOT_CMD="start"
 KVM_SHUTDOWN_CMD="shutdown"
 KVM_ROLE_CONFIG="control-vms-kvm.yml"
-KVM_HOST_CONFIG="ansible-hosts-fedora"
 VMWARE_HOST_CONFIG="ansible-hosts-vmware"
+KVM_HOST_CONFIG="ansible-hosts-fedora"
 
 
 BOOT_CMD=${KVM_BOOT_CMD}

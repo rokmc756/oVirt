@@ -1,0 +1,10 @@
+---
+- name: Remove Network
+  ovirt_network:
+    name: "{{ item.name }}"
+    state: absent
+    data_center: "{{ item.dc }}"
+    auth: "{{ _ovirt.engine.auth }}"
+  with_items:
+    - "{{ _network }}"
+

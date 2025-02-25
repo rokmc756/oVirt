@@ -44,5 +44,11 @@
 - name: Setup oVirt Engine Python SDK
   import_tasks: ext/install-ovirt-sdk.yml
   tags: setup, install
-  when: ( sdk is defined and sdk == true )
+  when: ( sdk is defined and sdk == true ) and inventory_hostname in groups['engine']
+
+
+- name: Remove oVirt Engine Python SDK
+  import_tasks: ext/uninstall-ovirt-sdk.yml
+  tags: remove, uninstall
+  when: ( sdk is defined and sdk == true ) and inventory_hostname in groups['engine']
 

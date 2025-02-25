@@ -1,0 +1,11 @@
+---
+- name: Create Network
+  ovirt_network:
+    data_center: "{{ item.dc }}"
+    name: "{{ item.name }}"
+    vlan_tag: 10
+    vm_network: true
+    external_provider: ovirt-provider-ovn
+    auth: "{{ _ovirt.engine.auth }}"
+  with_items:
+    - "{{ _network }}"
