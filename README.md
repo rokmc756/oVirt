@@ -32,8 +32,9 @@ $ yum install ansible
 
 ### Setup NFS Server / iSCSI Target / Postgres Database for oVirt Engine
 #### 1) Configure Inventory
-$ vi ansible-hosts=co9
 ```
+$ vi ansible-hosts=co9
+
 [all:vars]
 ssh_key_filename="id_rsa"
 remote_machine_username="jomoon"
