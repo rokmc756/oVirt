@@ -35,7 +35,7 @@ download:
 # For All Roles
 %:
 	@cat Makefile.tmp  | sed -e 's/temp/${*}/g' > Makefile.${*}
-	@ln -sf ansible-hosts-co9 ansible-hosts
+	@ln -sf ansible-hosts-co9-gluster ansible-hosts
 	@cat setup-temp.yml.tmp | sed -e 's/    - temp/    - ${*}/g' > setup-${*}.yml
 	@make -f Makefile.${*} r=${r} s=${s} c=${c} USERNAME=${USERNAME}
 	@rm -f setup-${*}.yml Makefile.${*}

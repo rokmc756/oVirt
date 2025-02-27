@@ -52,3 +52,15 @@
   tags: remove, uninstall
   when: ( sdk is defined and sdk == true ) and inventory_hostname in groups['engine']
 
+
+- name: Setup DNS Zone and Record
+  import_tasks: dns/setup-freeipa.yml
+  tags: setup, create, install
+  when: ( dns is defined and dns == true ) and inventory_hostname in groups['dns']
+
+
+- name: Remove DNS Zone and Record
+  import_tasks: dns/remove-freeipa.yml
+  tags: remove, delete, uninstall
+  when: ( dns is defined and dns == true ) and inventory_hostname in groups['dns']
+

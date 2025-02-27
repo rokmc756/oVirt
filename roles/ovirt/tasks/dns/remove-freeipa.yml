@@ -25,9 +25,9 @@
   with_items:
     - "{{ _dns.resource.forward }}"
     - "{{ _dns.resource.reverse }}"
-  when: ( record is defined and record == true ) or ( okd_all is defined and okd_all == true )
+  when: ( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true )
 - debug: msg={{ find_dns_records }}
-  when: print_debug == true and (( record is defined and record == true ) or ( okd_all is defined and okd_all == true ))
+  when: print_debug == true and (( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true ))
 
 
 - name: Delete DNS PTR Records
@@ -36,9 +36,9 @@
   register: delete_dns_ptr_records
   ignore_errors: true
   with_items: "{{ _dns.resource.reverse }}"
-  when: ( record is defined and record == true ) or ( okd_all is defined and okd_all == true )
+  when: ( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true )
 - debug: msg={{ delete_dns_ptr_records }}
-  when: print_debug == true and (( record is defined and record == true ) or ( okd_all is defined and okd_all == true ))
+  when: print_debug == true and (( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true ))
 
 
 - name: Delete DNS A Records
@@ -47,9 +47,9 @@
   register: delete_dns_a_records
   ignore_errors: true
   with_items: "{{ _dns.resource.forward }}"
-  when: ( record is defined and record == true ) or ( okd_all is defined and okd_all == true )
+  when: ( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true )
 - debug: msg={{ delete_dns_a_records }}
-  when: print_debug == true and (( record is defined and record == true ) or ( okd_all is defined and okd_all == true ))
+  when: print_debug == true and (( record is defined and record == true ) or ( ovirt_all is defined and ovirt_all == true ))
 
 
 - name: Check if DNS Zones Exists Currently
@@ -59,9 +59,9 @@
   ignore_errors: true
   with_items:
     - "{{ _dns.zone }}"
-  when: ( zone is defined and zone == true ) or ( okd_all is defined and okd_all == true )
+  when: ( zone is defined and zone == true ) or ( ovirt_all is defined and ovirt_all == true )
 - debug: msg={{ show_dns_zones }}
-  when: print_debug == true and (( zone is defined and zone == true ) or ( okd_all is defined and okd_all == true ))
+  when: print_debug == true and (( zone is defined and zone == true ) or ( ovirt_all is defined and ovirt_all == true ))
 
 
 # ipa dnszone-mod ipa.example --dnssec=1
@@ -71,9 +71,9 @@
   register: delete_dns_zone
   ignore_errors: true
   with_items: "{{ _dns.zone }}"
-  when: ( zone is defined and zone == true ) or ( okd_all is defined and okd_all == true )
+  when: ( zone is defined and zone == true ) or ( ovirt_all is defined and ovirt_all == true )
 - debug: msg={{ delete_dns_zone }}
-  when: print_debug == true and (( zone is defined and zone == true ) or ( okd_all is defined and okd_all == true ))
+  when: print_debug == true and (( zone is defined and zone == true ) or ( ovirt_all is defined and ovirt_all == true ))
 #
 # DNSSEC key master services are not running
 # Run ipactl status on the DNSSEC key master and check that all services are running: All services should be in state RUNNING except

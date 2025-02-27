@@ -262,6 +262,29 @@ Disable centos-ceph-pacific repository
            'max_connections' is currently '100'. It is required to be at least '150'.
          postgresql.conf is usually in /var/lib/pgsql/data,  or somewhere under /etc/postgresql* . You have to restart PostgreSQL after making these changes.
 ```
+### DISPERSE Mode is not supported
+```
+==> vdsm.log <==
+2025-02-27 18:25:13,496+0900 WARN  (jsonrpc/1) [storage.storageServer] Unsupported volume type, volume: 'distvol01', volume type: 'DISTRIBUTED_DISPERSE'. Please use the replicate type.To recover existing migrate it to supported type. (storageServer:352)
+2025-02-27 18:25:13,496+0900 INFO  (jsonrpc/1) [storage.storageServer] Creating directory '/rhev/data-center/mnt/glusterSD/co9-node01:_distvol01' (storageServer:217)
+2025-02-27 18:25:13,496+0900 INFO  (jsonrpc/1) [storage.fileutils] Creating directory: /rhev/data-center/mnt/glusterSD/co9-node01:_distvol01 mode: None (fileUtils:213)
+2025-02-27 18:25:13,496+0900 INFO  (jsonrpc/1) [storage.mount] mounting co9-node01:/distvol01 at /rhev/data-center/mnt/glusterSD/co9-node01:_distvol01 (mount:190)
+```
+
+### Error in Creating Gluster Storage Domain
+- https://unix.stackexchange.com/questions/774769/io-uring-with-fio-fails-on-rocky-9-3-w-kernel-5-14-0-362-18-1-el9-3-x86-64
+$ tail -f /var/log/glusterfs/rhev-data-center-mnt-glusterSD-*.log
+```
+r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfile-server=co9-node01 --volfile-server=co9-node02 --volfile-server=co9-node03 --volfile-id=/distvol01 /rhev/data-center/mnt/glusterSD/192.168.2.171:_distvol01}]
+[2025-02-27 14:32:44.497650 +0000] I [glusterfsd.c:2447:daemonize] 0-glusterfs: Pid of current running process is 28546
+[2025-02-27 14:32:44.505608 +0000] I [MSGID: 101190] [event-epoll.c:667:event_dispatch_epoll_worker] 0-epoll: Started thread with index [{index=0}]
+[2025-02-27 14:32:44.505679 +0000] I [MSGID: 101190] [event-epoll.c:667:event_dispatch_epoll_worker] 0-epoll: Started thread with index [{index=1}]
+[2025-02-27 14:32:44.506350 +0000] I [glusterfsd-mgmt.c:2209:mgmt_getspec_cbk] 0-glusterfs: Received list of available volfile servers: co9-node02:24007 co9-node03:24007
+[2025-02-27 14:32:44.506381 +0000] I [MSGID: 101221] [common-utils.c:3847:gf_set_volfile_server_common] 0-gluster: duplicate entry for volfile-server [{errno=17}, {error=File exists}]
+[2025-02-27 14:32:44.508104 +0000] I [io-stats.c:3711:ios_sample_buf_size_configure] 0-distvol01: Configure ios_sample_buf  size is 1024 because ios_sample_interval is 0
+[2025-02-27 14:32:44.508747 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-0: parent translators are ready, attempting connect on transport []
+[2025-02-27 14:32:44.510421 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-1: parent translators are ready, attempting connect on transport []
+```
 
 ### oVirt Engine Web UI not Responding
 - It was resolved by DNS Config in Desktop Rebooted and dns cache may be deleted

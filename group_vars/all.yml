@@ -47,8 +47,8 @@ _ovirt:
       ipaddr2: "192.168.2."
   engine:
     auth:
-      url: "https://co9-node01.jtest.pivotal.io/ovirt-engine/api"
-      hostname: "co9-node01.jtest.pivotal.io"
+      url: "https://co9-node05.jtest.pivotal.io/ovirt-engine/api"
+      hostname: "co9-node05.jtest.pivotal.io"
       username: "admin@ovirt@internalsso"
       password: "changeme"
       insecure: "true"

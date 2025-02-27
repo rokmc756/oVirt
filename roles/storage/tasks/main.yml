@@ -4,9 +4,9 @@
   when: ansible_os_family != 'RedHat' or  ansible_os_family != 'CentOS' or  ansible_os_family != 'Rocky'
 
 
-- name: Set Facts For Network and Packages Informations
-  import_tasks: set-storage-facts.yml
-  tags: install, uninstall, create, delete, setup, remove, clean, add
+#- name: Set Facts For Network and Packages Informations
+#  import_tasks: set-storage-facts.yml
+#  tags: install, uninstall, create, delete, setup, remove, clean, add
 
 
 - name: Import iSCSI Target and Initiator Playbook
@@ -22,5 +22,4 @@
 - name: Import Storage Domain Playbook
   import_tasks: domain/main.yml
   when: ( domain is defined and domain == true ) and ( local is defined or iscsi is defined or nfs is defined or gluster is defined )
-
 

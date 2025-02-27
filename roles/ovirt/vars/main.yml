@@ -13,21 +13,23 @@ _dns:
     - { name: 2.168.192.in-addr.arpa, type: reverse }
   resource:
     forward:
-      - {  name: "co9-node01",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.171"  }
-      - {  name: "co9-node02",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.172"  }
-      - {  name: "co9-node03",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.173"  }
-      - {  name: "co9-node04",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.174"  }
-      - {  name: "co9-node05",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.175"  }
-      - {  name: "co9-node06",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.176"  }
-      - {  name: "co9-node07",    i   zone: "okd4.pivotal.io",  type: "-a-rec",  value: "192.168.2.177"  }
+      - {  name: "co9-node01",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.171"  }
+      - {  name: "co9-node02",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.172"  }
+      - {  name: "co9-node03",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.173"  }
+      - {  name: "co9-node04",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.174"  }
+      - {  name: "co9-node05",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.175"  }
+      - {  name: "co9-node06",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.176"  }
+      - {  name: "co9-node07",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.177"  }
+      - {  name: "co9-node08",  zone: "jtest.pivotal.io",  type: "-a-rec",  value: "192.168.2.178"  }
     reverse:
-      - { name: "171",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node02.pivotal.io."  }
-      - { name: "172",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node03.pivotal.io."  }
-      - { name: "173",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node04.pivotal.io."  }
-      - { name: "174",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node05.pivotal.io."  }
-      - { name: "175",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node06.pivotal.io."  }
-      - { name: "176",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node07.pivotal.io."  }
-      - { name: "177",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node08.pivotal.io."  }
+      - { name: "171",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node01.jtest.pivotal.io."  }
+      - { name: "172",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node02.jtest.pivotal.io."  }
+      - { name: "173",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node03.jtest.pivotal.io."  }
+      - { name: "174",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node04.jtest.pivotal.io."  }
+      - { name: "175",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node05.jtest.pivotal.io."  }
+      - { name: "176",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node06.jtest.pivotal.io."  }
+      - { name: "177",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node07.jtest.pivotal.io."  }
+      - { name: "178",  zone: 2.168.192.in-addr.arpa,  type: "--ptr-rec", value: "co9-node08.jtest.pivotal.io."  }
 
 
 _selinux:
