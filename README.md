@@ -61,7 +61,7 @@ co9-node07      ansible_ssh_host=192.168.2.177
 
 #### 2) Initialize Hosts to create user and ssh keys for exchaning them among all hosts
 ```
-$ make hosts r=reinit s=all
+$ make hosts r=init s=all
 ```
 #### 3) Configure oVirt Ansible Collection
 ```
@@ -284,6 +284,23 @@ r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfi
 [2025-02-27 14:32:44.508104 +0000] I [io-stats.c:3711:ios_sample_buf_size_configure] 0-distvol01: Configure ios_sample_buf  size is 1024 because ios_sample_interval is 0
 [2025-02-27 14:32:44.508747 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-0: parent translators are ready, attempting connect on transport []
 [2025-02-27 14:32:44.510421 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-1: parent translators are ready, attempting connect on transport []
+```
+
+
+### glusterfs geo replication not installed
+```
+==> cli.log <==
+[2025-02-28 06:00:23.647974 +0000] I [cli.c:828:main] 0-cli: Started running /usr/sbin/gluster with version 10.5
+[2025-02-28 06:00:23.648060 +0000] I [cli.c:702:cli_rpc_init] 0-cli: Connecting to remote glusterd at co9-node01
+[2025-02-28 06:00:23.651784 +0000] I [cli-cmd-volume.c:2066:cli_check_gsync_present] 0-: geo-replication not installed
+[2025-02-28 06:00:23.652013 +0000] I [MSGID: 101190] [event-epoll.c:667:event_dispatch_epoll_worker] 0-epoll: Started thread with index [{index=0}]
+[2025-02-28 06:00:23.652107 +0000] I [MSGID: 101190] [event-epoll.c:667:event_dispatch_epoll_worker] 0-epoll: Started thread with index [{index=1}]
+[2025-02-28 06:00:23.652635 +0000] I [cli-rpc-ops.c:767:gf_cli_get_volume_cbk] 0-cli: Received resp to get vol: 0
+[2025-02-28 06:00:23.653123 +0000] I [input.c:31:cli_batch] 0-: Exiting with: 0
+
+
+$ dnf install -y glusterfs-geo-replication
+
 ```
 
 ### oVirt Engine Web UI not Responding
