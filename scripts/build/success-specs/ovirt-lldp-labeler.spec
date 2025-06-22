@@ -1,0 +1,72 @@
+# Copyright 2018-2020 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+%if 0%{?fedora} >= 30 || 0%{?rhel} >= 8
+%global required_python python3
+%else
+%global required_python python
+%endif
+
+Name:           ovirt-lldp-labeler
+Version:        1.0.3
+Release:        0.20211104061757.gitc3ce03c%{?dist}
+Summary:        The oVirt Link Layer Discovery Protocol labeler
+License:        ASL 2.0
+BuildArch:      noarch
+URL:            https://gerrit.ovirt.org/#/admin/projects/ovirt-lldp-labeler
+Source0:        %{name}-%{version}.tar.gz
+
+Requires: %{required_python}-ovirt-engine-sdk4 >= 4.2.0
+Requires: %{required_python}-six
+
+BuildRequires: %{required_python}
+BuildRequires: systemd
+
+%prep
+%autosetup
+
+%build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%make_install
+
+%post
+%systemd_post ovirt-lldp-labeler.timer
+
+
+%preun
+%systemd_preun ovirt-lldp-labeler.timer
+
+
+%postun
+%systemd_postun_with_restart ovirt-lldp-labeler.timer
+
+%description
+The oVirt Link Layer Discovery Protocol labeler.
+
+
+%files
+%config(noreplace) %{_sysconfdir}/ovirt-lldp-labeler
+%{_datadir}/ovirt-lldp-labeler
+%{_unitdir}/ovirt-lldp-labeler.timer
+%{_unitdir}/ovirt-lldp-labeler.service
+%license LICENSE
+%doc README.adoc
+
+%changelog
+* Wed Apr 01 2020 Ales Musil <amusil@redhat.com> - 1.0.2
+- Fix support for python3
+- Added builds for el8 and fc30

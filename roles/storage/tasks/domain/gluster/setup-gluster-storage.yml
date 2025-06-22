@@ -7,7 +7,6 @@
     glusterfs:
       address: "{{ hostvars[groups['gluster'][0]].ansible_hostname }}"
       path: "/{{ _gluster.root_dir }}"
-      mount_options: "backup-volfile-servers=co9-node01:co9-node02:co9-node03,_netdev 0 0"
     auth: "{{ _ovirt.engine.auth }}"
-    #  mount_options: "backup-volfile-servers=192.168.2.172:192.168.2.173,_netdev 0 0"
+    # mount_options: "backup-volfile-servers=co9-node01:co9-node02:co9-node03,_netdev 0 0"
 

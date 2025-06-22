@@ -1,0 +1,129 @@
+# Copyright (C) 2018-2022 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+%{!?_pkgdocdir: %global _pkgdocdir %{_docdir}/%{name}-%{version}}
+
+%global         package_version 1.3.3
+%global         srcname ovirt-setup-lib
+
+Summary:        oVirt setup common library
+Name:           %{srcname}
+Version:        1.3.3
+Release:        1%{?release_suffix}%{?dist}
+Source0:        http://resources.ovirt.org/pub/src/%{srcname}/%{srcname}-%{package_version}.tar.gz
+License:        ASL 2.0
+Group:          Development/Libraries
+BuildArch:      noarch
+Url:            http://www.ovirt.org
+
+BuildRequires:  gettext
+BuildRequires:  python3-devel
+Requires: python3-%{srcname}
+
+%description
+oVirt setup common library
+
+%package -n python3-%{srcname}
+Summary:        oVirt setup common library
+%{?python_provide:%python_provide python3-%{srcname}}
+Requires: python3-setuptools
+Requires: python3-netaddr
+Requires: python3-six
+Requires: python3-pwquality
+
+%description -n python3-%{srcname}
+oVirt setup common library
+
+%prep
+%setup -q -n %{srcname}-%{package_version}
+rm -rf %{py3dir}
+cp -a . %{py3dir}
+find %{py3dir} -name '*.py' | xargs sed -i '1s|^#!python|#!%{__python3}|'
+
+%build
+
+pushd %{py3dir}
+%configure \
+        PYTHON="%{__python3}" \
+        --docdir="%{_pkgdocdir}" \
+        --disable-python-syntax-check \
+        %{?conf}
+make %{?_smp_mflags}
+popd
+
+%install
+pushd %{py3dir}
+make %{?_smp_mflags} install DESTDIR="%{buildroot}"
+popd
+rm -f %{buildroot}%{_pkgdocdir}/README.md
+
+%clean
+rm -rf %{buildroot}
+
+%files -n python3-%{srcname}
+%{python3_sitelib}/ovirt_setup_lib/
+%doc README.md
+%license COPYING
+
+%changelog
+* Mon Jan 24 2022 Sandro Bonazzola <sbonazzo@redhat.com> - 1.3.3-1
+- 1.3.3-1
+
+* Tue Jul 07 2020 - Asaf Rachmani <arachman@redhat.com> - 1.3.2-1
+- 1.3.2-1
+
+* Sun Jun 07 2020 - Yedidyah Bar David <didi@redhat.com> - 1.3.1-1
+- 1.3.1-1
+
+* Thu Nov 21 2019 Sandro Bonazzola <sbonazzo@redhat.com> - 1.3.0-1
+- 1.3.0-1
+
+* Tue Jan 08 2019 Sandro Bonazzola <sbonazzo@redhat.com> - 1.2.0-1
+- 1.2.0-1
+
+* Fri Aug 11 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.4-1
+- 1.1.4-1
+
+* Wed Jun  7 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.3-1
+- 1.1.3-1
+
+* Tue Jun  6 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.2-1
+- Resolves: BZ#1452243
+
+* Thu May 25 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.1-1
+- Resolves: BZ#1452243
+
+* Mon Dec 19 2016 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.0-1
+- Resolves: BZ#1366270
+  hosted-engine-setup (and cockpit) accepts host address with an underscore
+  while the engine correctly refuses them
+
+* Fri Sep 30 2016 Sandro Bonazzola <sbonazzo@redhat.com> - 1.1.0-0.0.master
+- Dropped EL6 support
+
+* Tue May 31 2016 Sandro Bonazzola <sbonazzo@redhat.com> - 1.0.2-1
+- 1.0.2-1
+
+* Tue Dec 22 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 1.0.1-1
+- 1.0.1-1
+
+* Tue Sep 22 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 1.0.0-1
+- 1.0.0-1
+
+* Wed Jul 15 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 1.0.0-0.0.master
+- initial packaging
+- doc: https://fedoraproject.org/wiki/Changes/UnversionedDocdirs
+- python: https://fedoraproject.org/wiki/Packaging:Python#Macros
+

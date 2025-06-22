@@ -1,0 +1,222 @@
+#
+# otopi -- plugable installer
+#
+
+%global		package_version 1.10.4
+
+
+Summary:	oVirt Task Oriented Pluggable Installer/Implementation (%{name})
+Name:		otopi
+Version:	1.10.4
+Release:	1%{?dist}
+License:	LGPL-2.0-or-later
+URL:		http://www.ovirt.org
+Source0:	http://resources.ovirt.org/pub/src/%{name}/%{name}-%{package_version}.tar.gz
+Group:		Development/Libraries
+
+BuildArch:	noarch
+
+BuildRequires:	gettext >= 0.18.2
+BuildRequires:	python%{python3_pkgversion}-devel
+BuildRequires:	gcc
+
+%description
+Standalone plugin based installation framework to be used to setup
+system components. The plugin nature provides simplicity to
+add new installation functionality without the complexity of the state
+and transaction management.
+
+%package -n python%{python3_pkgversion}-%{name}
+Summary:	%{summary}
+%{?python_provide:%python_provide python%{python3_pkgversion}-%{name}}
+Requires:	python%{python3_pkgversion} >= 3.6.0
+Requires:	python%{python3_pkgversion}-dateutil
+Requires:	python%{python3_pkgversion}-distro
+Requires:	%{name}-common = %{version}-%{release}
+Provides:	%{name} = %{version}-%{release}
+Obsoletes:	python%{python3_pkgversion}-%{name}-devtools
+
+%description -n python%{python3_pkgversion}-%{name}
+%{summary}.
+
+Python %{python3_pkgversion} version.
+
+
+%package common
+Summary:	Common files for %{name}
+Obsoletes:	%{name}-java
+
+%description common
+%{summary}
+
+
+%package debug-plugins
+Summary:	%{name} debug plugins
+Requires:	%{name} = %{version}-%{release}
+
+%description debug-plugins
+Debug plugins for %{name}.
+
+
+%prep
+%setup -q -n %{name}-%{package_version}
+
+%build
+
+%configure PYTHON="%{__python3}" \
+	--docdir="%{_docdir}/%{name}-%{version}" \
+	--disable-python-syntax-check \
+	--with-local-version="%{name}-%{version}-%{release}" \
+	%{?conf}
+make %{?_smp_mflags}
+
+
+%install
+make %{?_smp_mflags} install DESTDIR="%{buildroot}"
+install -d -m 755 "%{buildroot}%{_sysconfdir}/%{name}.conf.d"
+%find_lang %{name}
+
+
+%files -n python%{python3_pkgversion}-%{name}
+%doc AUTHORS
+%license COPYING
+%license LICENSE
+%doc README.md
+%doc README.API
+%doc README.config-query
+%doc README.debug-plugins
+%doc README.dialog
+%doc README.environment
+%{python3_sitelib}/%{name}/
+
+%files common -f %{name}.lang
+%doc AUTHORS
+%license COPYING
+%license LICENSE
+%dir %{_datadir}/%{name}
+%dir %{_datadir}/%{name}/plugins
+%dir %{_sysconfdir}/%{name}.conf.d
+%{_sbindir}/%{name}
+%{_bindir}/%{name}-config-query
+%{_datadir}/%{name}/scripts/
+%{_datadir}/%{name}/plugins/%{name}/
+%{_datadir}/%{name}/%{name}-bundle
+%{_datadir}/%{name}/%{name}-functions
+%exclude %{_datadir}/%{name}/plugins/%{name}/debug/
+
+%files debug-plugins
+%{_datadir}/%{name}/plugins/%{name}/debug/
+%license COPYING
+%license LICENSE
+%doc AUTHORS
+%doc README.debug-plugins
+
+%changelog
+* Tue Nov 28 2023 Sandro Bonazzola <sbonazzo@redhat.com> - 1.10.4-1
+- Migrated to SPDX license.
+- Release.
+
+* Mon Sep 05 2022 - Yedidyah Bar David <didi@redhat.com> - 1.10.3-1
+- Release.
+
+* Wed Aug 03 2022 - Yedidyah Bar David <didi@redhat.com> - 1.10.2-1
+- Release.
+
+* Thu Mar 03 2022 - Yedidyah Bar David <didi@redhat.com> - 1.10.0-1
+- Release.
+
+* Tue Aug 03 2021 - Yedidyah Bar David <didi@redhat.com> - 1.9.5-1
+- Release.
+
+* Wed Jan 27 2021 - Yedidyah Bar David <didi@redhat.com> - 1.9.4-1
+- Release.
+
+* Wed Jan 13 2021 - Yedidyah Bar David <didi@redhat.com> - 1.9.3-1
+- Release.
+
+* Sun Jun 07 2020 - Yedidyah Bar David <didi@redhat.com> - 1.9.2-1
+- Release.
+
+* Thu Mar 26 2020 - Sandro Bonazzola <sbonazzo@redhat.com> - 1.9.1-1
+- Release.
+
+* Mon Nov 25 2019 - Yedidyah Bar David <didi@redhat.com> - 1.9.0-1
+- Release.
+
+* Sun Mar 10 2019 - Yedidyah Bar David <didi@redhat.com> - 1.8.1-1
+- Release.
+
+* Tue Jan 08 2019 - Yedidyah Bar David <didi@redhat.com> - 1.8.0-1
+- Release.
+
+* Tue Jan 09 2018 - Yedidyah Bar David <didi@redhat.com> - 1.7.6-1
+- Release.
+
+* Thu Nov 30 2017 - Yedidyah Bar David <didi@redhat.com> - 1.7.5-1
+- Release.
+
+* Wed Nov 29 2017 - Yedidyah Bar David <didi@redhat.com> - 1.7.4-1
+- Release.
+
+* Mon Nov 20 2017 - Yedidyah Bar David <didi@redhat.com> - 1.7.3-1
+- Release
+
+* Fri Nov 17 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.7.2-1
+- Release.
+
+* Tue Jul 25 2017 Yedidyah Bar David <didi@redhat.com> - 1.7.1-1
+- Release.
+
+* Thu Jul 20 2017 Yedidyah Bar David <didi@redhat.com> - 1.7.0-1
+- Release.
+
+* Thu Jan 12 2017 Yedidyah Bar David <didi@redhat.com> - 1.6.0-1
+- Release.
+
+* Mon May 30 2016 Yedidyah Bar David <didi@redhat.com> - 1.5.0-1
+- Release.
+
+* Tue Feb 9 2016 Yedidyah Bar David <didi@redhat.com> - 1.4.1-1
+- Release.
+
+* Thu Oct 15 2015 Alon Bar-Lev <alonbl@redhat.com> - 1.4.0-1
+- Release.
+
+* Thu Jan 15 2015 Alon Bar-Lev <alonbl@redhat.com> - 1.3.1-1
+- Release.
+
+* Mon Oct 6 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.3.0-1
+- Release.
+
+* Fri May 2 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.1-1
+- Release.
+
+* Tue Mar 18 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-1
+- Release.
+
+* Wed Mar 12 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.11.rc4
+- Release candidate.
+
+* Tue Mar 11 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.9.rc3
+- Release candidate.
+
+* Thu Feb 27 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.7.rc2
+- Release candidate.
+
+* Thu Feb 27 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.5.rc
+- Release candidate.
+
+* Mon Feb 17 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.3.beta2
+- Beta.
+
+* Mon Jan 20 2014 Alon Bar-Lev <alonbl@redhat.com> - 1.2.0-0.1.beta
+- Beta.
+
+* Mon Aug 26 2013 Alon Bar-Lev <alonbl@redhat.com> - 1.1.0-1
+- Release.
+
+* Thu Feb 14 2013 Alon Bar-Lev <alonbl@redhat.com> - 1.0.0-1
+- Release.
+
+* Sat Oct 13 2012 Alon Bar-Lev <alonbl@redhat.com> - 1.0.0-0.1_beta
+- Initial add.

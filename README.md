@@ -1,23 +1,23 @@
-## What is this Ansible Playbook for oVirt
+### What is this Ansible Playbook for oVirt
 It is Ansible Playbook to deploy oVirt for CentOS 9.x. The purpose of this is only for development environment not production.
 
-## What is oVirt?
+### What is oVirt?
 oVirt is an open-source distributed virtualization solution, designed to manage your entire enterprise infrastructure. oVirt uses the trusted KVM hypervisor and is built upon several other community projects, including libvirt, Gluster, PatternFly, and Ansible.
 
-## oVirt Architecture
+### oVirt Architecture
 ![alt text](https://raw.githubusercontent.com/rokmc756/ovirt/main/roles/ovirt/images/ovirt-architecture.png)
 
 
-## Supported Platform and OS
+### Supported Platform and OS
 Virtual Machines\
 Baremetal\
 CentOS Stream 9.x
 
-## Prerequisite for Ansible Host
+### Prerequisite for Ansible Host
 MacOS or Windows Linux Subsysetm or Many kind of Linux Distributions should have ansible as ansible host.\
 Supported OS for ansible target host should be prepared with package repository configured such as yum, dnf and apt
 
-## Prepare Ansible Host to run this Ansible Playbook
+### Prepare Ansible Host to run this Ansible Playbook
 * MacOS
 ```
 $ xcode-select --install
@@ -171,17 +171,17 @@ $ make storage r=remove s=domain c=iscsi
 $ make storage r=remove s=domain c=nfs
 ```
 
-## References
+### References
 - https://computingforgeeks.com/how-to-install-ovirt-engine-on-centos-stream/
 - https://www.server-world.info/en/note?os=CentOS_Stream_9&p=ovirt45&f=1
 
-## Similar Playbook
-## TODO
-## Debugging
-## Tracking Issues
+### Similar Playbook
+### TODO
+### Debugging
+### Tracking Issues
 
-## Errors
-### Hosted Engine Setup Error
+### Errors
+#### Hosted Engine Setup Error
 - https://lists.ovirt.org/archives/list/users@ovirt.org/thread/QTQ4QMGOJLS6GNRVXI47QKI3ZULVGLOA/
 ```
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Fetch IPv6 CIDR for virbr0]
@@ -207,7 +207,7 @@ INFO_TABLE="
 2,192.168.2.17,202,101,$MTUx,8s0,$NET2,no,$GW2,yes,no
 "
 ```
-### Repoitory Failure
+#### Repoitory Failure
 ```
 [ INFO  ] TASK [ovirt.ovirt.engine_setup : Install required packages for oVirt Engine deployment]
 [ INFO  ] ok: [localhost]
@@ -229,7 +229,7 @@ and
 Disable centos-ceph-pacific repository
 
 
-### Python Crypt module is deperecated
+#### Python Crypt module is deperecated
 ```
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Copy engine logs]
 [ INFO  ] changed: [localhost]
@@ -251,7 +251,7 @@ Disable centos-ceph-pacific repository
 [ INFO  ] ok: [localhost]
 ```
 
-### Postgres Options Required when using Remote Database
+#### Postgres Options Required when using Remote Database
 ```
 [ ERROR ]
          Please note the following required changes in postgresql.conf on '192.168.2.175':
@@ -262,7 +262,7 @@ Disable centos-ceph-pacific repository
            'max_connections' is currently '100'. It is required to be at least '150'.
          postgresql.conf is usually in /var/lib/pgsql/data,  or somewhere under /etc/postgresql* . You have to restart PostgreSQL after making these changes.
 ```
-### DISPERSE Mode is not supported
+#### DISPERSE Mode is not supported
 ```
 ==> vdsm.log <==
 2025-02-27 18:25:13,496+0900 WARN  (jsonrpc/1) [storage.storageServer] Unsupported volume type, volume: 'distvol01', volume type: 'DISTRIBUTED_DISPERSE'. Please use the replicate type.To recover existing migrate it to supported type. (storageServer:352)
@@ -271,7 +271,7 @@ Disable centos-ceph-pacific repository
 2025-02-27 18:25:13,496+0900 INFO  (jsonrpc/1) [storage.mount] mounting co9-node01:/distvol01 at /rhev/data-center/mnt/glusterSD/co9-node01:_distvol01 (mount:190)
 ```
 
-### Error in Creating Gluster Storage Domain
+#### Error in Creating Gluster Storage Domain
 - https://unix.stackexchange.com/questions/774769/io-uring-with-fio-fails-on-rocky-9-3-w-kernel-5-14-0-362-18-1-el9-3-x86-64
 $ tail -f /var/log/glusterfs/rhev-data-center-mnt-glusterSD-*.log
 ```
@@ -287,7 +287,7 @@ r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfi
 ```
 
 
-### glusterfs geo replication not installed
+#### glusterfs geo replication not installed
 ```
 ==> cli.log <==
 [2025-02-28 06:00:23.647974 +0000] I [cli.c:828:main] 0-cli: Started running /usr/sbin/gluster with version 10.5
@@ -303,14 +303,14 @@ $ dnf install -y glusterfs-geo-replication
 
 ```
 
-### oVirt Engine Web UI not Responding
+#### oVirt Engine Web UI not Responding
 - It was resolved by DNS Config in Desktop Rebooted and dns cache may be deleted
 
-### iSCSI Login Problem
+#### iSCSI Login Problem
 - In case woring iqn of iscsi target in /etc/iscsi/initiatorname.iscsi, it would be failed to create iscsi storage domain.
 If there are nothing in /etc/iscsi directory, vdsm create new initiatorname.iscsi. So, make empty directory to /etc/iscsi in order to solve this problem.
 
-### Prepare CentOS for Hosted Engine
+#### Prepare CentOS for Hosted Engine
 1) yum repo
 mirror -> valut
 disable ceph repo

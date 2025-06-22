@@ -1,0 +1,107 @@
+
+%global _product_name oVirt Node Next
+
+%global _node_tools_dir /usr/share/%{name}/tools/
+
+%global with_docs 0
+%global with_tools 0
+
+Name:       ovirt-node-ng
+Version:    4.4.2
+Release:    1%{?dist}%{?extra_release}
+License:    GPLv2
+Summary:    %{_product_name}
+
+URL:        https://www.ovirt.org/download/node.html
+Source0:    https://github.com/oVirt/%{name}/releases/download/%{name}-%{version}/%{name}-4.4.2.tar.xz
+BuildArch:  noarch
+
+BuildRequires: autoconf
+BuildRequires: automake
+
+BuildRequires: python%{python3_pkgversion}-devel
+
+%description
+This package provides some tooling around building %{_product_name}.
+Currently the main package is empty.
+
+%if 0%{?with_docs}
+%package docs
+Summary:     Documentation for %{_product_name}
+
+%description docs
+Subpackage for docs related to %{_product_name}
+%endif
+
+%if 0%{?with_tools}
+%package tools
+Summary:     Tools for %{_product_name}
+
+%description tools
+Subpackage for tools related to %{_product_name}
+%endif
+
+%package nodectl
+Summary:     nodectl for %{name}
+Requires:    imgbased
+Requires:   python%{python3_pkgversion}-%{name}-nodectl
+
+%description nodectl
+Subpackage for nodectl for %{name}
+
+%package -n python%{python3_pkgversion}-%{name}-nodectl
+Summary: A python 3 module for nodectl
+Requires:   %{name}-nodectl = 4.4.2
+
+%description -n python%{python3_pkgversion}-%{name}-nodectl
+python%{python3_pkgversion}-%{name}-nodectl is a python 3 library for nodectl
+
+%prep
+%setup -q -n %{name}-4.4.2
+
+%build
+
+%configure PYTHON="%{__python3}"
+make %{?_smp_mflags}
+
+%install
+install -Dm 0755 scripts/nodectl-motd.sh %{buildroot}%{_sysconfdir}/profile.d/nodectl-motd.sh
+install -Dm 0755 scripts/nodectl-run-banner.sh %{buildroot}%{_sysconfdir}/profile.d/nodectl-run-banner.sh
+make install DESTDIR="%{buildroot}"
+
+%files nodectl
+%{_mandir}/man8/nodectl.8.gz
+%{_sysconfdir}/profile.d/nodectl-motd.sh
+%{_sysconfdir}/profile.d/nodectl-run-banner.sh
+%{_sbindir}/nodectl
+
+%files -n python%{python3_pkgversion}-%{name}-nodectl
+%{python3_sitelib}/nodectl
+
+%if 0%{?with_docs}
+%files docs
+%{_docdir}/%{name}/*
+%else
+%exclude %{_docdir}/%{name}/*
+%endif
+
+%if 0%{?with_tools}
+%files tools
+%dir %{_node_tools_dir}
+%{_node_tools_dir}/*
+%{_bindir}/create-node-installation-iso
+%else
+%exclude %{_node_tools_dir}/*
+%exclude %{_bindir}/create-node-installation-iso
+%endif
+
+%changelog
+* Tue Apr 05 2022 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.2-1
+- Rebase on upstream 4.4.2
+
+* Wed Mar 02 2022 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.1-1
+- Rebase on upstream 4.4.1
+
+* Fri Nov 22 2019 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.0-1
+- Rebase on upstream 4.4.0
+- Initial el8 import

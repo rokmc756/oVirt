@@ -1,0 +1,50 @@
+---
+#- name: Add Group from Authorization Provider
+#  ovirt_group:
+#    name: support_group
+#    domain: internalkeycloak-authz
+#    auth: "{{ _ovirt.engine.auth }}"
+#    state: present
+
+
+#- name: Gather Information About All Users which First Names Start with John
+#  ovirt_user_info:
+#    pattern: name=jomoon*
+#    auth: "{{ _ovirt.engine.auth }}"
+#  register: result
+
+
+#- name: Print Gathered Information
+#  debug: msg="{{ result.ovirt_users }}"
+
+
+- name: Add User from Authorization Provider
+  ovirt_user:
+    name: jomoon
+    domain: internalkeycloak-authz
+    fetch_nested: true
+    auth: "{{ _ovirt.engine.auth }}"
+    state: present
+
+
+#- name: Add User from Authorization Provider
+#  ovirt_user:
+#    auth: "{{ _ovirt.engine.auth }}"
+#    state: present
+#    name: jomoon
+#    namespace: "*"
+#    poll_interval: 5
+#    wait: true
+#    authz_name: internalkeycloak-authz
+
+
+#- name: Add User from Authorization Provider
+#  ovirt_permission:
+#    user_name: jomoon
+#    authz_name: internalkeycloak-authz
+#    object_type: cluster
+#    object_name: jClu01
+#    role: ClusterAdmin
+#    auth: "{{ _ovirt.engine.auth }}"
+#    state: present
+

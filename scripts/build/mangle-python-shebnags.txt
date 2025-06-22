@@ -1,0 +1,8 @@
+https://devel.fedoraproject.narkive.com/OXXcIRYD/fedora-30-self-contained-change-proposal-make-ambiguous-python-shebangs-error
+
+If %_mangle_python_shebnags_to is set, the script will mangle to that
+(unless it's unversioned python again or otherwise invalid).
+
+If %_mangle_python_shebnags_to is not set (the default), the script will
+error (as currently proposed).
+

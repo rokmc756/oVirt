@@ -1,0 +1,9 @@
+
+# False
+%global __strip /bin/true
+
+
+# %define __strip /your/binutils/bin/strip
+# %define __objdump /your/binutils/bin/objdump
+
+

@@ -1,0 +1,310 @@
+#
+# vdsm-jsonrpc-java - vdsm json rpc
+# Copyright (C) 2013-2016 Red Hat, Inc.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+
+%global	package_version 1.7.3
+%global	package_maven_version 1.7.3
+
+%global	_java_jdk_home /usr/lib/jvm/java-11-openjdk
+%global	_mvn_opts -Pno-test
+
+Summary:	JsonRpc java client (%{name}) for oVirt
+Name:		vdsm-jsonrpc-java
+Version:	1.7.3
+Release:	1%{?release_suffix}%{?dist}
+License:	LGPL-2.0-or-later
+URL:		http://www.ovirt.org
+Source:		http://resources.ovirt.org/pub/ovirt-master-snapshot/src/%{name}/%{name}-%{package_version}.tar.gz
+Group:		Development/Libraries
+
+# We need to disable automatic generation of "Requires: java-headless >=1:11"
+# by xmvn, because JDK 11 doesn't provide java-headless, but it
+# provides java-11-headless
+AutoReq:	no
+
+BuildArch:	noarch
+
+BuildRequires:  apache-commons-lang3
+BuildRequires:	gcc
+BuildRequires:	jackson-annotations >= 2.10.0
+BuildRequires:	jackson-core >= 2.10.0
+BuildRequires:	jackson-databind >= 2.10.0
+BuildRequires:	java-11-openjdk-devel >= 11.0.4
+BuildRequires:	javapackages-tools
+BuildRequires:	slf4j-jdk14 >= 1.7.0
+BuildRequires:	junit
+BuildRequires:	mockito
+BuildRequires:	maven >= 3.6.0
+BuildRequires:	maven-compiler-plugin
+BuildRequires:	maven-enforcer-plugin
+BuildRequires:	maven-jar-plugin
+BuildRequires:	maven-local
+BuildRequires:	maven-source-plugin
+BuildRequires:	maven-surefire-provider-junit
+
+
+%if 0%{?rhel} >=9
+# Block packages from maven:3.8 to pass the build                                                                                                                                                                                                            
+BuildRequires: maven < 1:3.8.0                                                                                                                                                                                                                                
+BuildRequires: maven-lib < 1:3.8.0                                                                                                                                                                                                                            
+BuildRequires: maven-resolver < 1:1.7.0                                                                                                                                                                                                                      
+BuildRequires: maven-shared-utils < 3.3.4-6                                                                                                                                                                                                                  
+BuildRequires: maven-wagon < 3.5.0                                                                                                                                                                                                                            
+BuildRequires: plexus-cipher < 1.8                                                                                                                                                                                                                            
+BuildRequires: plexus-classworlds < 2.6.0-13                                                                                                                                                                                                                  
+BuildRequires: plexus-containers-component-annotations < 2.1.1                                                                                                                                                                                                
+BuildRequires: plexus-interpolation < 1.26-14                                                                                                                                                                                                                
+BuildRequires: plexus-sec-dispatcher < 1.5                                                                                                                                                                                                                    
+BuildRequires: plexus-utils < 3.3.0-12                                                                                                                                                                                                                        
+BuildRequires: sisu < 1:0.3.5  
+%endif
+
+# Explicit mvn imports because 'AutoReq:    no'
+BuildRequires:	mvn(com.fasterxml.jackson.core:jackson-databind)
+BuildRequires:	mvn(org.apache.commons:commons-lang3)
+BuildRequires:	mvn(org.apache.maven.plugins:maven-compiler-plugin)
+BuildRequires:	mvn(org.apache.maven.plugins:maven-source-plugin)
+
+# On EL8 maven-javadoc-plugin has been merged into xmvn , but on Fedora
+# we still need to require it
+%if 0%{?fedora} >=30
+BuildRequires:	mvn(org.apache.maven.plugins:maven-javadoc-plugin)
+%endif
+
+Requires:	apache-commons-lang3 >= 3.7
+Requires:	jackson-annotations >= 2.9.0
+Requires:	jackson-core >= 2.9.0
+Requires:	jackson-databind >= 2.9.0
+Requires:	java-11-openjdk-headless >= 11.0.4
+Requires:	slf4j >= 1.7.0
+
+%description
+vdsm jsonrpc java
+
+%package javadoc
+Summary:	Java-docs for %{name}
+Group:		Documentation
+
+%description javadoc
+This package contains the API documentation for %{name}.
+
+%prep
+%setup -q -n %{name}-%{package_version}
+%if 0%{?rhel} > 7
+# No need for maven-javadoc-plugin in RHEL8, xmvn will take care of it.
+%pom_remove_plugin :maven-javadoc-plugin client/pom.xml.in
+%endif
+
+%build
+%configure
+
+# necessary because jdk 1.8 comes as default with xmvn
+export JAVA_HOME="%{_java_jdk_home}"
+
+%mvn_build -- %{?_mvn_opts}
+
+%install
+%mvn_install
+
+%files -f .mfiles
+%dir %{_javadir}/%{name}
+
+%files javadoc -f .mfiles-javadoc
+
+%changelog
+* Tue Nov 28 2023 Sandro Bonazzola <sandro.bonazzola@gmail.com> - 1.7.3
+- Rebase on upstream 1.7.3.
+- Migrated to SPDX license.
+- Disconnect the session after SSL handshake issue.
+- Replace secret data with asterisks in debug logs.
+- Bump fasterxml jackson to avoid CVEs.
+
+* Mon Jul 25 2022 Artur Socha <asocha@redhat.com> 1.7.2
+- Fix expired SSL certificates validation on connect
+- Fix bogus date in changelog
+- Drop slf4j depedency
+
+* Mon Dec 20 2021 Artur Socha <asocha@redhat.com> 1.7.1
+- Jackson upgrade to 2.12.1
+
+* Mon Dec 20 2021 Artur Socha <asocha@redhat.com> 1.7.0
+- Batch calls support removed
+- Migrated to GitHub and GitHub Actions
+- Apache commons lang bumped to lang3
+- Log4j12 depedency droped
+- Logging improved
+
+* Wed Nov 25 2020 Artur Socha <asocha@redhat.com> 1.6.0
+- Replace org.reactivestreams with standard Java implementation
+
+* Tue Oct 27 2020 Artur Socha <asocha@redhant.com> 1.5.7
+- Fix for negative subscription count, correct bug-url
+
+* Tue Oct 27 2020 Artur Socha <asocha@redhant.com> 1.5.6
+- Fix for negative subscription count
+
+* Wed Aug 5 2020 Artur Socha <asocha@redhat.com> 1.5.5
+- Automation: drop fc30 support
+- Jackson upgrade to 2.10.3
+- ReactorClient: half flag made atomic
+- More verbose logging in ReactorListener
+- Unit tests enabled for CI
+- Unit tests hardening & refactoring
+
+* Thu Feb 13 2020 Artur Socha <asocha@redhat.com> 1.5.4
+- No more plain java build for release process
+- fix for incorrect dependencies generation by xmvn
+- oss parent removed from maven pom
+
+* Thu Feb 6 2020 Artur Socha <asocha@redhat.com> 1.5.3
+- Jackson migration to com.fasterxml.* v2.9.x
+- STDCI V2 configuration
+- Centos 7 CI build configuration removed
+
+* Mon Dec 2 2019 Artur Socha <asocha@redhat.com> 1.5.2
+- Fix for rpm datadir location
+- Use always maven to build project
+- Use tabs character in spec file consistently
+
+* Wed Nov 27 2019 Artur Socha <asocha@redhat.com> 1.5.1
+- downstream build fix
+
+* Tue Nov 26 2019 Artur Socha <asocha@redhat.com> 1.5.0
+- migration to java 11
+
+* Tue May 28 2019 Piotr Kliczewski <pkliczew@redhat.com> 1.4.18
+- heartbeat: improve how we process
+
+* Mon Apr 15 2019 Piotr Kliczewski <pkliczew@redhat.com> 1.4.17
+- Provide default timeout to purge events
+
+* Fri Apr 12 2019 Piotr Kliczewski <pkliczew@redhat.com> 1.4.16
+- Purge old events and EventPublisher should handle exceptions
+
+* Fri Oct 5 2018 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.15-2
+- packaging: spec: fix spec changelog
+
+* Fri Sep 14 2018 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.15
+- All hosts stuck in connecting/not responding state until engine restarted
+
+* Mon Jul 9 2018 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.14
+- Rephrase Heartbeat exceeded error message
+- Log response when message not found
+
+* Wed May 9 2018 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.13
+- Rephrase Heartbeat exceeded error message
+- Connections shouldn't be closed after the connection to the host was recovered
+
+* Fri Apr 13 2018 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.12
+- Don't retry async calls on connection error
+
+* Fri Dec 15 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.11
+- Heartbeat logging
+
+* Mon Dec 4 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.10
+- Heartbeat logging improvements
+
+* Mon Nov 20 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.9
+- Release host level lock faster
+
+* Thu Oct 19 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.8
+- host to id mapping needs to be cleared on failure
+
+* Wed Sep 20 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.7
+- Adding callbacks infrastructure to use non-blocking threads
+
+* Tue Apr 11 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.6
+- send correlation id to the server
+
+* Mon Mar 27 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.5
+- java exception visible in Events when upgrade check is done on recently fenced host
+- packaging: spec: move to headless java
+
+* Thu Mar 9 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.4
+- remove end of line before command
+
+* Wed Feb 22 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.3
+- incomplete message BZ #1425725
+
+* Wed Jan 18 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.2
+- process messages one by one
+
+* Thu Jan 12 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.1
+- handle ssl closed status
+
+* Mon Jan 9 2017 Piotr Kliczewski <pkliczew@redhat.com> - 1.4.0
+- Make sure to match host properly
+- Add cause exception upon re-throwing IOException in ReactorClient
+- Frame split when using multiple hosts
+
+* Fri Dec 2 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.3.5
+- stop processing if closing
+
+* Fri Nov 18 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.3.4
+- Closing channel could take too much reactor's time
+
+* Fri Nov 4 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.3.3
+- Release for 4.1
+
+* Wed Oct 12 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.3.2
+- No reconnect during setupNetworks
+
+* Mon Sep 5 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.3.1
+- Release of 1.3.1
+
+* Wed Jun 29 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.2.5
+- wait on close
+
+* Tue Jun 28 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.2.4
+- schedule close when we reset policy
+
+* Tue May 31 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.2.3
+- Release of 1.2.3
+
+* Mon Feb 8 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.2.1
+- Initial release of 4.0
+
+* Tue Jan 19 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.7-1
+- Exception shouldn't be recursive
+
+* Fri Jan 8 2016 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.6-1
+- scheduled tasks do not check whether a channel is there
+- i/o thread blocked during connection
+
+* Thu Sep 24 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.5-1
+- Releasing for RC
+
+* Wed Jul 15 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.4
+- Update report ceritification expiration date
+- Fix spelling mistake
+
+* Sun Jul 5 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.3-2
+- Version update
+
+* Wed Jul 1 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.3-1
+- Matching side effect fix
+- Report certification expiration date
+
+* Wed Jun 10 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.2-1
+- Introduced new queue for events
+
+* Mon Apr 20 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.1
+- Introduction of Events
+
+* Tue Apr 7 2015 Piotr Kliczewski <pkliczew@redhat.com> - 1.1.0
+- Initial release for 3.6

@@ -1,0 +1,110 @@
+%global make_common_opts \\\
+	PREFIX=%{_prefix} \\\
+	SYSCONF_DIR=%{_sysconfdir} \\\
+	DATAROOT_DIR=%{_datadir} \\\
+	DESTDIR=%{buildroot} \\\
+	PACKAGE_VERSION=%{version} \\\
+	PACKAGE_DISPLAY_NAME=%{name}-%{version}-1 \\\
+	%{nil}
+
+
+Name:		ovirt-engine-extension-aaa-misc
+Version:	1.1.1
+Release:	1%{?dist}
+Summary:	oVirt Engine AAA Misc Extension
+Group:		%{ovirt_product_group}
+License:	ASL 2.0
+URL:		http://www.ovirt.org
+Source:		%{name}-%{version}.tar.gz
+
+# We need to disable automatic generation of "Requires: java-headless >= 1:11"
+# by xmvn, becase JDK 11 doesn't provide java-headless artifact, but it
+# provides java-11-headless.
+AutoReq:	no
+
+BuildArch:	noarch
+
+BuildRequires:	java-11-openjdk-devel
+BuildRequires:	make
+BuildRequires:	maven-local
+BuildRequires:	mvn(org.apache.maven.plugins:maven-compiler-plugin)
+BuildRequires:	mvn(org.apache.maven.plugins:maven-source-plugin)
+
+BuildRequires:	mvn(javax.servlet:javax.servlet-api)
+BuildRequires:	mvn(org.ovirt.engine.api:ovirt-engine-extensions-api)
+BuildRequires:	mvn(org.slf4j:slf4j-api)
+
+# Block packages from maven:3.8 to pass the build
+BuildRequires:  maven < 1:3.8.0
+BuildRequires:  maven-lib < 1:3.8.0
+BuildRequires:  maven-resolver < 1:1.7.0
+BuildRequires:  maven-shared-utils < 3.3.4-6
+BuildRequires:  maven-wagon < 3.5.0
+BuildRequires:  plexus-cipher < 1.8
+BuildRequires:  plexus-classworlds < 2.6.0-13
+BuildRequires:  plexus-containers-component-annotations < 2.1.1
+BuildRequires:  plexus-interpolation < 1.26-14
+BuildRequires:  plexus-sec-dispatcher < 1.5
+BuildRequires:  plexus-utils < 3.3.0-12
+BuildRequires:  sisu < 1:0.3.5
+
+
+Requires:	java-11-openjdk-headless >= 1:11.0.0
+Requires:	javapackages-filesystem
+Requires:	ovirt-engine-extensions-api
+Requires:	slf4j
+
+
+%description
+This package contains miscelaneous oVirt Engine AAA Extensions to provide
+features necessary for example to Kerberos or OpenID Connect integrations.
+
+
+%prep
+%setup -c -q
+
+
+%build
+# Necessary to override the default for xmvn, which is JDK 8
+export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+
+make %{make_common_opts} generate-files
+%mvn_build -j
+
+
+%install
+make %{make_common_opts} install
+%mvn_install
+
+
+%files -f .mfiles
+%dir %{_javadir}/%{name}
+%dir %{_datadir}/%{name}
+%doc README*
+%{_datadir}/%{name}/modules/
+%{_sysconfdir}/ovirt-engine/engine.conf.d/50-ovirt-engine-extension-aaa-misc.conf
+
+
+%changelog
+* Thu Apr 07 2022 Martin Perina <mperina@redhat.com> 1.1.1-1
+- Allow mapping to transform to upper case or lower case
+
+* Fri Feb 28 2020 Martin Perina <mperina@redhat.com> 1.1.0-1
+- Moved java classes under org.ovirt.engine.extension.aaa.misc package
+- Require OpenJDK 11
+- Use maven to build the project
+
+* Wed Jun 26 2019 Martin Perina <mperina@redhat.com> 1.0.3-1
+- Fix FC29 and remove support for EL6
+
+* Fri Nov 23 2018 Martin Perina <mperina@redhat.com> 1.0.2-1
+- Add AuthzExtension to get information from headers
+- Fixed Fedora packaging
+- Switched to oVirt STDCIv2
+
+* Tue May 24 2016 Martin Perina <mperina@redhat.com> 1.0.1-1
+- Fixed various build issues
+- Fixed documentation typos and issues
+
+* Mon Dec 1 2014 Alon Bar-Lev <alonbl@redhat.com> 1.0.0-1
+- Initial.

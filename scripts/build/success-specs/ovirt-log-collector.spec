@@ -1,0 +1,105 @@
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
+
+%global		package_version 4.5.0
+
+Summary:	Log Collector for oVirt Engine
+Name:		ovirt-log-collector
+Version:	4.5.0
+Release:	1%{?release_suffix}%{?dist}
+License:	ASL 2.0
+URL:		http://www.ovirt.org
+Source0:	http://resources.ovirt.org/pub/src/%{name}/%{name}-%{package_version}.tar.gz
+
+BuildArch:	noarch
+
+Requires:	logrotate
+Requires:	openssh-clients
+Requires:	sos >= 4.3-2
+BuildRequires:	gettext
+
+Requires:	python3
+Requires:	python3-dateutil
+Requires:	python3-lxml
+Requires:	python3-ovirt-engine-sdk4 >= 4.4.4
+Requires:	python%{python3_pkgversion}-ovirt-engine-lib
+BuildRequires:	python3-devel
+
+%description
+Log Collector tool for oVirt Engine
+
+%prep
+%setup -q -n %{name}-%{package_version}
+
+%build
+%configure \
+	--docdir="%{_docdir}/%{name}-%{version}" \
+	--disable-python-syntax-check \
+	PYTHON="%{__python3}"
+make %{?_smp_mflags}
+
+%check
+make check
+
+%install
+rm -rf "%{buildroot}"
+make %{?_smp_mflags} install DESTDIR="%{buildroot}"
+
+%files
+%doc AUTHORS
+%license COPYING
+%dir %{_localstatedir}/log/ovirt-engine/%{name}
+%dir %{_sysconfdir}/ovirt-engine/logcollector.conf.d
+%config(noreplace) %{_sysconfdir}/ovirt-engine/logcollector.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%{python3_sitelib}/ovirt_log_collector/
+%{_bindir}/ovirt-log-collector
+%{_mandir}/man8/ovirt-log-collector.8*
+
+%changelog
+* Mon Mar 06 2023 Sandro Bonazzola <sbonazzo@redhat.com> - 4.5.0-1
+- The sos yum plugin output is not collected anymore
+- Fixes BZ#2174894
+
+* Wed Jun 22 2022 Lev Veyde <lveyde@redhat.com> - 4.4.7-1
+- Fixes BZ#2081676
+
+* Tue May 31 2022 Lev Veyde <lveyde@redhat.com> - 4.4.6-1
+- Fixes BZ#2081676
+- Fixes BZ#2081684
+
+* Mon Jan 31 2022 Lev Veyde <lveyde@redhat.com> - 4.4.5-1
+- Fixes BZ#2040402
+- Fixes BZ#2048546
+- Fixed usage string
+
+* Wed Oct 07 2020 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.4-1
+- Fixes BZ#1877479
+- Simplify spec file targeting python3 only.
+- Release 4.4.4-1
+
+* Tue Jul 07 2020 Douglas Schilling Landgraf <dougsland@redhat.com> - 4.4.3-1
+- Do not fail on 'ls -lRZ' errors | BZ#1644646
+- compress: use md5 or sha256 for postgresql .tar.gz | BZ#1854071
+
+* Tue Jun 30 2020 Douglas Schilling Landgraf <dougsland@redhat.com> - 4.4.2-1
+- Release 4.4.2-1
+
+* Mon Feb 17 2020 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.1-1
+- Release 4.4.1-1
+
+* Fri Nov 22 2019 Sandro Bonazzola <sbonazzo@redhat.com> - 4.4.0-1
+- Rebase on upstream 4.4.0
+- Initial import in oVirt 4.4

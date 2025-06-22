@@ -1,0 +1,44 @@
+---
+#- name: Import Image from Glance s a Template
+#  ovirt_template:
+#    state: imported
+#    name: "mytemplate"
+#    # image_disk: "centos7"
+#    # glance_image_disk_name: "centos7"
+#    glance_image_disk_name: "CentOS 7 Generic Cloud Image v2009 for x86_64 (0748fd4)"
+#    template_image_disk_name: "CentOS 7 Generic Cloud Image v2009 for x86_64 (0748fd4)"
+#    image_provider: "ovirt-image-repository"
+#    storage_domain: "jnfs-sd01"
+#    cluster: "jClu01"
+#    auth: "{{ _ovirt.engine.auth }}"
+#    operating_system: "rhel_7x64"
+#    memory: "2GiB"
+#  register: create_template
+#- debug: msg={{ create_template }}
+
+
+# Import Image Template
+- name: Import Image from Storage Domain
+  ovirt_template:
+    state: imported
+    name: mytemplate
+    export_domain: jnfs-sd01
+    storage_domain: jgluster-sd01
+    cluster: jClu01
+    auth: "{{ _ovirt.engine.auth }}"
+  register: create_template
+- debug: msg={{ create_template }}
+
+
+# Remove template
+#- ovirt.ovirt.ovirt_template:
+#    state: absent
+#    name: mytemplate
+
+# Register template
+#- ovirt.ovirt.ovirt_template:
+#    state: registered
+#    storage_domain: mystorage
+#    cluster: mycluster
+#    name: mytemplate
+

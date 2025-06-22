@@ -1,0 +1,178 @@
+# Note: this spec is used for RHEL, CentOS and Fedora. Plese do not use Fedora
+# only macros. If you want to suggest changes please do this upstream:
+# https://gerrit.ovirt.org/#/admin/projects/ioprocess
+
+Name:		ioprocess
+Version:	1.4.2
+Release:	1.202111071752.git53786ff%{?dist}
+Summary:	Slave process to perform risky IO
+
+Group:		System Environment/Base
+License:	GPLv2+
+URL:		https://github.com/oVirt/ioprocess
+
+# Note: the url fragment satisfies the build system, assuming that the source
+# url ends with name-version.tar.gz. This part is ignored by the server.
+# See https://fedoraproject.org/wiki/Packaging:SourceURL?rd=Packaging/SourceURL#Git_Tags
+Source:		https://github.com/oVirt/ioprocess/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
+
+
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	gcc
+BuildRequires:	glib2-devel
+BuildRequires:	python3-devel
+BuildRequires:	yajl-devel
+
+Requires:	yajl
+
+
+%description
+Slave process to perform risky IO.
+
+
+%prep
+%setup -q %{name}-%{version}
+
+
+%build
+%configure
+make %{?_smp_mflags}
+
+
+%install
+make %{?_smp_mflags} install DESTDIR="%{buildroot}"
+
+%files
+%{!?_licensedir:%global license %doc}
+%{_libexecdir}/ioprocess
+%doc README.md AUTHORS
+%license COPYING
+
+%package -n python3-ioprocess
+Summary:	Python bindings for ioprocess
+BuildRequires:	python3
+BuildRequires:	python3-six
+BuildRequires:	util-linux
+Requires:	python3
+Requires:	python3-six
+Requires:	%{name} = %{version}
+
+%description -n python3-ioprocess
+Python bindings for ioprocess
+
+%files -n python3-ioprocess
+%{python3_sitelib}/ioprocess-*.egg-info
+%{python3_sitelib}/ioprocess/
+%doc README.md AUTHORS
+%license COPYING
+
+
+%changelog
+
+* Sun Sep 06 2020 Eyal Shenitzky <eshenitz@redhat.com> 1.4.2-1
+- Improve logging during block size detections #BZ1777805
+- Use module logger for client logs
+- Improve child process termination
+- Skip log errors when polling fail #BZ1851893
+- Fix handling of large messages
+- Add Makefile and missing build requirements #BZ1830441
+- Generate release suffix in configure time and allow
+  configurable build locations #BZ1830441
+
+* Fri Nov 22 2019 Nir Soffer <nsoffer@redhat.com> 1.4.0-1
+- Release for el8 and s390x for oVirt 4.4
+- Drop python 2 builds
+
+* Sat Sep 21 2019 Nir Soffer <nsoffer@redhat.com> 1.3.0-1
+- ioprocess: Add probe_block_size() #BZ1753901
+- ioprocess: Fix access() #BZ1744624
+
+* Wed Jul 10 2019 Nir Soffer <nsoffer@redhat.com> 1.2.1-1
+- Fix writefile() to support 4k storage #BZ1592916
+- Fix readfile() with direct I/O #BZ1726834
+
+* Wed Apr 11 2018 Nir Soffer <nsoffer@redhat.com> 1.1.1-1
+- python: Log client name in all messages #BZ1550106
+- ioprocess: Add lstat() #BZ1564515
+- binding: Do not read from stdout
+
+* Sat Feb 03 2018 Nir Soffer <nsoffer@redhat.com> 1.0.2-1
+- spec: Remove Fedora only macro #BZ1541389
+
+* Tue Jan 30 2018 Nir Soffer <nsoffer@redhat.com> 1.0.0-1
+- ioprocess: Fix fsyncPath #BZ1536261
+- ioprocess: Wait until writefile completes #BZ1535429
+- spec: Rename python binding to python2-ioprocess
+- spec: Remove leftovers from RHEL 6
+- python: Close unneeded fds before executing child
+- python: Add a test for closing unrelated fds
+- automation: Add missing repositories
+- python: Replace cpopen with subprocess32
+- python: Wait for child process on close
+- python: Increase the start timeout #BZ1414604
+- python: Rename threads to match vdsm thread names #BZ1392214
+- python: Set system thread names if possible #BZ1392214
+- python: Log unhandled errors in threads #BZ1392214
+- python: Require ioprocess of same version
+
+* Thu Jun 16 2016 Nir Soffer <nsoffer@redhat.com> 0.16.1-1
+- ioprocess: Fix logging of file descriptor path
+- ioprocess: Fix logger initialization
+- binding: Fix race between _run and close
+- binding: Add optional ioprocess name
+- ioprocess: Fix fd leak in truncate and touch (Resolves BZ#1339777)
+- python3: Initial port
+- build: Switch to pytest and tox
+- bindings: Use only daemon threads
+- use LDADD instead of LDFLAGS to fix failure to build with ld
+  --as-needed (Logan Rosen)
+
+* Fri Dec 11 2015 Sandro Bonazzola <sbonazzo@redhat.com> 0.15.1-1
+- Resolves: BZ#1287946
+- Fixed URL and Source0
+- Use license for license files
+
+* Sun Nov 29 2015 Yeela Kaplan <ykaplan@redhat.com> - 0.15.0-4
+- Fix string formatting for 32bit architecture
+* Thu Nov 26 2015 Yaniv Bronhaim <ybronhei@redhat.com> - 0.15.0-3
+- Rebuild for ovirt 3.6.1
+- Add debug logging
+- Fix memory and cpu leak
+- Set cpu affinity to run ioprocess on any cpu
+* Sun Apr 5 2015 Yaniv Bronhaim <ybronhei@redhat.com> - 0.15.0-2
+- Rebuild for ppc64le arch
+* Tue Feb 17 2015 Sandro Bonazzola <sbonazzo@redhat.com> - 0.15.0-1
+- Fix rpmlint E: explicit-lib-dependency
+- Fix rpmlint W: no-documentation
+* Mon Oct 20 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.14.0-1
+- Fix poll timeout
+- Add support for zombiereaper where available
+- Fix IOProcesses being referenced by commincation thread
+- build: update INSTALL
+- specfile: Add missing dependency to glib2
+* Wed Sep 3 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.12.0-1
+- Fixed memory leak due to forgetting to clear the pending requests queue in
+  the python bindings
+* Mon Aug 4 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.10.0-1
+- Fixed unsefe strerror usage
+- Fixed cases logging lines get mangled
+* Tue Jul 29 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.8.1-1
+- Fixed unsafe use of strerror
+- Fixed races in queue limiting
+* Sun Jul 20 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.6.1-1
+- Reduced logging even for debug level
+- Added support for block sizes other than 512
+- Added the --max-queued-requests argument
+* Sun Jun 15 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.5.0-1
+- Fixed missing error check in readfile()
+- Added flags arg to fetch()
+- Added st_blocks to stat()
+* Thu Jun 05 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.4.1-1
+- Fixed missing dependcy for python bindings
+* Mon Jun 02 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.4-1
+- Added touch command
+- Changed truncate to include setting file mode and creating a file only when
+  one doesn't exist
+* Sun Jan 05 2014 Saggi Mizrahi <smizrahi@redhat.com> 0.3-1
+Inital RPM release

@@ -10,9 +10,17 @@
 - debug: msg={{ install_pkgs }}
 
 
+- name: Install Wheel
+  shell: |
+    pip3 install wheel
+  register: install_wheel
+- debug: msg={{ install_wheel }}
+
+
 - name: Install Ovirt Engine Python SDK
   shell: |
-    pip3 install ovirt-engine-sdk-python
+    pip3 install ovirt-engine-sdk-python==4.4.0
   register: install_python_sdk
 - debug: msg={{ install_python_sdk }}
+
 

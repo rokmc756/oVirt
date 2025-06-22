@@ -1,0 +1,1037 @@
+#
+# CUSTOMIZATION-BEGIN
+#
+# ovirt_build_extra_flags
+#
+# CUSTOMIZATION-END
+#
+
+#
+# rpm does not support override
+# nor modify of variables
+#
+%if %{?_ovirt_build_extra_flags:1}%{?ovirt_build_extra_flags:1}0
+%global EXTRA_BUILD_FLAGS %{?_ovirt_build_extra_flags:%{_ovirt_build_extra_flags}}%{?ovirt_build_extra_flags: %{ovirt_build_extra_flags}}
+%endif
+
+%global jackson_core jackson-core
+%global jackson_databind jackson-databind
+%global jackson_annotations jackson-annotations
+%global systemd systemd
+%global commons_collections apache-commons-collections
+
+%if 0%{?rhel}
+%if 0%{?centos}
+# Build package for oVirt on CentOS Stream
+%define rhv_build 0
+%else
+# Build package for RHV on RHEL
+%define rhv_build 1
+%endif
+%else
+# Default to oVirt build for all other platforms
+%define rhv_build 0
+%endif
+
+%global dom4j ovirt-engine-wildfly
+%if %{rhv_build}
+%global dom4j eap7-dom4j
+%endif
+
+%global product_name Data warehouse package for oVirt Virtualization Suite
+%global product_description oVirt virtualization manager data warehouse
+
+%global engine_gid 108
+%global engine_group ovirt
+%global engine_uid 108
+%global engine_user ovirt
+
+# Macro to create an user:
+#
+# %1 user name
+# %2 user id
+# %3 primary group name
+# %4 primary group id
+# %5 description
+# %6 home directory
+#
+%global _ovirt_create_user() \
+getent group %3 >/dev/null || groupadd -r -g %4 %3; \
+getent passwd %1 >/dev/null || useradd -r -u %2 -g %3 -c %5 -s /sbin/nologin -d %6 %1
+
+%global ovirt_create_user_engine \
+%_ovirt_create_user %{engine_user} %{engine_uid} %{engine_group} %{engine_gid} "%%{ovirt_user_description}" %{engine_state}
+
+%global make_common_opts \\\
+	-j1 \\\
+	BUILD_VALIDATION=0 \\\
+	PACKAGE_NAME=%{name} \\\
+	RPM_VERSION=%{version} \\\
+	RPM_RELEASE=%{release} \\\
+	LOCALSTATE_DIR=%{_localstatedir} \\\
+	PREFIX=%{_prefix} \\\
+	SYSCONF_DIR=%{_sysconfdir} \\\
+	BIN_DIR=%{_bindir} \\\
+	DATAROOT_DIR=%{_datadir} \\\
+	MAN_DIR=%{_mandir} \\\
+	DOC_DIR=%{_docdir} \\\
+	PYTHON=%{__python3} \\\
+	PYTHON_DIR=%{python3_sitelib} \\\
+	JAVA_DIR=%{_javadir} \\\
+	PKG_USER=%{engine_user} \\\
+	PKG_GROUP=%{engine_group} \\\
+	%{?EXTRA_BUILD_FLAGS:EXTRA_BUILD_FLAGS="%{EXTRA_BUILD_FLAGS}"}
+
+Name:		ovirt-engine-dwh
+Version:	4.5.8
+Release:	1%{?release_suffix}%{?dist}
+License:	LGPL-2.0-only AND Apache-2.0
+Summary:	%{product_name}
+Group:		Virtualization/Management
+URL:		https://www.ovirt.org
+BuildArch:	noarch
+Source:		https://resources.ovirt.org/pub/src/ovirt-engine-dwh/ovirt-engine-dwh-4.5.8.tar.gz
+
+BuildRequires:  java-11-openjdk-devel >= 11.0.4
+BuildRequires:	%{commons_collections}
+BuildRequires:	%{dom4j}
+BuildRequires:	ant
+BuildRequires:	jpackage-utils
+BuildRequires:	javapackages-tools
+BuildRequires:	jackson-core
+BuildRequires:	jackson-databind
+BuildRequires:	jackson-annotations
+BuildRequires:	make
+
+BuildRequires:	python3
+BuildRequires:	python3-devel
+
+BuildRequires:	systemd
+
+Requires:	%{commons_collections}
+Requires:	%{dom4j}
+Requires:	%{name}-setup >= %{version}-%{release}
+Requires:	%{name}-grafana-integration-setup >= %{version}-%{release}
+Requires:	java-11-openjdk-headless >= 11.0.4
+Requires:	jpackage-utils
+Requires:	javapackages-tools
+Requires:	jackson-core
+Requires:	jackson-databind
+Requires:	jackson-annotations
+Requires:	logrotate
+Requires:	postgresql-jdbc
+
+Requires:       postgresql-server >= 12.0
+Requires:       postgresql-contrib >= 12.0
+
+%description
+The %{product_description} package provides
+the ETL process and DB scripts to create a historic database API.
+Enables SQL BI reports creation for management and monitoring.
+
+Requires(post):		systemd
+Requires(preun):	systemd
+Requires(postun):	systemd
+
+%package setup
+Summary:	%{product_name} setup
+Group:		Virtualization/Management
+Requires:	ovirt-engine-setup-plugin-ovirt-engine-common >= 4.5.0
+Requires:	%{name}-grafana-integration-setup = %{version}-%{release}
+BuildRequires:	python3
+BuildRequires:	python3-devel
+Requires: python%{python3_pkgversion}-ovirt-setup-lib
+Requires:	%{name} >= 3.6.0
+
+Requires:       postgresql-server >= 12.0
+Requires:       postgresql-contrib >= 12.0
+
+%description setup
+%{product_description} setup package.
+
+%package grafana-integration-setup
+Summary:	%{product_name} Grafana integration setup
+Group:		Virtualization/Management
+Requires:	ovirt-engine-setup-plugin-ovirt-engine-common >= 4.5.3
+Requires:	%{name}-setup = %{version}-%{release}
+Requires:	grafana >= 7.3
+Requires:	grafana-postgres >= 7.3
+Requires:	httpd
+Requires:	mod_ssl
+BuildRequires:	python3
+BuildRequires:	python3-devel
+Requires:	python3-ovirt-setup-lib
+Requires:	python3-jinja2
+
+Requires:       postgresql-server >= 12.0
+Requires:       postgresql-contrib >= 12.0
+
+%description grafana-integration-setup
+%{product_description} Grafana integration setup package.
+
+%prep
+%setup -c -q
+
+%build
+make %{make_common_opts}
+
+%install
+rm -fr "%{buildroot}"
+
+make %{make_common_opts} install DESTDIR=%{buildroot}
+
+%py_byte_compile %{__python3} %{buildroot}/%{_datadir}/*
+
+#
+# /var creation
+#
+install -dm 755 "%{buildroot}/%{_localstatedir}/lib/ovirt-engine-dwh"
+install -dm 700 "%{buildroot}/%{_localstatedir}/log/ovirt-engine-dwh"
+
+#
+# Move jars to destribution location
+#
+install -dm 755 "%{buildroot}%{_javadir}/ovirt-engine-dwh"
+while read lib_path; do
+	java_path="%{_javadir}/ovirt-engine-dwh/$(basename "${lib_path}")"
+	mv "%{buildroot}/${lib_path}" "%{buildroot}/${java_path}"
+	ln -s "${java_path}" "%{buildroot}${lib_path}"
+done << __EOF__
+%{_datadir}/ovirt-engine-dwh/lib/advancedPersistentLookupLib.jar
+%{_datadir}/ovirt-engine-dwh/lib/etltermination.jar
+%{_datadir}/ovirt-engine-dwh/lib/historyETL.jar
+%{_datadir}/ovirt-engine-dwh/lib/routines.jar
+__EOF__
+
+# Needed for compatibility if package is different than the directory structure
+%if "%{name}" != "ovirt-engine-dwh"
+ln -s "ovirt-engine-dwh" "%{buildroot}%{_javadir}/ovirt-engine-dwh/../%{name}"
+%endif
+
+#
+# Register services
+#
+install -dm 755 "%{buildroot}%{_unitdir}"
+cp "%{buildroot}%{_datadir}/ovirt-engine-dwh/services/ovirt-engine-dwhd/ovirt-engine-dwhd.systemd" "%{buildroot}%{_unitdir}/ovirt-engine-dwhd.service"
+
+# backward compatibly (pre-3.4.0)
+# perserve old configuration
+install -d "%{buildroot}%{_sysconfdir}/ovirt-engine/ovirt-engine-dwh"
+touch "%{buildroot}%{_sysconfdir}/ovirt-engine/ovirt-engine-dwh/Default.properties"
+
+#
+# Package customization
+#
+
+%pre
+%ovirt_create_user_engine
+
+%post
+%systemd_post ovirt-engine-dwhd.service
+
+%preun
+%systemd_preun ovirt-engine-dwhd.service
+
+%postun
+%systemd_postun ovirt-engine-dwhd.service
+
+%files
+
+%ghost %config(noreplace) %{_sysconfdir}/ovirt-engine/ovirt-engine-dwh/Default.properties
+%config(noreplace) %{_sysconfdir}/logrotate.d/ovirt-engine-dwhd
+%dir %attr(-, %{engine_user}, %{engine_group}) %{_localstatedir}/lib/ovirt-engine-dwh/
+%dir %attr(-, %{engine_user}, %{engine_group}) %{_localstatedir}/log/ovirt-engine-dwh/
+%dir %{_sysconfdir}/ovirt-engine-dwh
+%{_bindir}/dwh-vacuum
+%{_datadir}/ovirt-engine-dwh/
+%{_datadir}/ovirt-engine-dwh/bin/dwh-prolog.sh
+%{_datadir}/ovirt-engine-dwh/bin/dwh-vacuum.sh
+%{_datadir}/ovirt-engine-dwh/bin/generate-pgpass.sh
+%{_javadir}/ovirt-engine-dwh/
+%{_sysconfdir}/ovirt-engine-dwh/ovirt-engine-dwhd.conf.d/
+%{_localstatedir}/lib/ovirt-engine-dwh/backups/
+
+%if "%{name}" != "ovirt-engine-dwh"
+%{_javadir}/%{name}
+%endif
+
+%{_unitdir}/ovirt-engine-dwhd.service
+
+%files setup
+%{_datadir}/ovirt-engine/setup/ovirt_engine_setup/dwh/
+%{_datadir}/ovirt-engine/setup/plugins/*/ovirt-engine-dwh/
+
+%files grafana-integration-setup
+%{_datadir}/ovirt-engine/setup/ovirt_engine_setup/grafana_dwh/
+%{_datadir}/ovirt-engine/setup/plugins/*/ovirt-engine-grafana-dwh/
+%{_sysconfdir}/grafana/conf/
+
+%changelog
+* Wed Nov 29 2023 Sandro Bonazzola <sandro.bonazzola@gmail.com> - 4.5.8
+- Fix admin login for grafana
+- Migrate License tag to SPDX
+
+* Wed Oct 05 2022 Martin Perina <mperina@redhat.com> - 4.5.7
+- Revert "Fix type error in _customization_sso"
+
+* Tue Sep 06 2022 Martin Perina <mperina@redhat.com> - 4.5.6
+- packaging: setup: Filter from logs secrets from otopi answer files
+
+* Thu Sep 01 2022 Martin Perina <mperina@redhat.com> - 4.5.5
+- packaging: setup: Fix the call to ok_to_renew_cert
+- Fix type error in _customization_sso
+- Bug 2122174 - Perform remote engine operations before clean up
+
+* Wed Aug 3 2022 Aviv Litman <alitman@redhat.com> - 4.5.4
+- Bug 2113980 - packaging: setup: Refine the condition on _closeup_engine_grafana_acc…
+
+* Wed Jun 1 2022 Aviv Litman <alitman@redhat.com> - 4.5.3
+- spec: Remove fedora and rhel<8
+- spec: Fix dom4j definition
+- Fix Grafana proxy configuration
+- Mark temp repo directory as safe for COPR
+- update Java's classpath
+- Bug 2021497 - Reconfigure SSO on keycloak activation
+
+* Wed Mar 30 2022 Aviv Litman <alitman@redhat.com> - 4.5.2
+- Bug 2021497 - packaging: grafana SSO with internal Keycloak
+- build: auto-add generated files to gitignore
+
+* Fri Mar 18 2022 Martin Perina <mperina@redhat.com> - 4.5.1
+- Bug 1828982 - Use fasterxml for ResumeUtil json serialization
+- Bug 2010903 - Update read/write ops statistics
+- Bug 2010903 - Update the vm disk ops queries
+
+* Mon Feb 28 2022 Aviv Litman <alitman@redhat.com> - 4.5.0
+- Bug 1931939 - Add the engine FQDN to dwh
+- Bug 2030663 - Update Network statistics types in DWH
+- Bug 2026358 - ovirt_engine_history_grafana user is not granted permissions to query new tables
+- Bug 2026362 - moved major version to 4.5.0
+- Bug 1925878 - Create links from Grafana to RHVM
+- Bug 2041220 - Update queries to use v4_5 views in all dashboards
+
+* Thu Sep 2 2021 Aviv Litman <alitman@redhat.com> - 4.4.9
+- Bug 1992690 - Customize 'oVirt Inventory Dashboard'
+
+* Mon Aug 2 2021 Aviv Litman <alitman@redhat.com> - 4.4.8
+- packaging: dbscripts: Improve logging
+- Bug 1980315 packaging: setup: Usually default to configure grafana
+
+* Thu Jul 1 2021 Aviv Litman <alitman@redhat.com> - 4.4.7.3
+- Bug 1976768 - Fixing year in the calendar table
+
+* Wed Jun 23 2021 Aviv Litman <alitman@redhat.com> - 4.4.7.2
+- Fix titles in interface panels
+- Bug 1937714 - Add rx and tx drop to Grafana
+- Bug 1896359 - Add number_of_threads
+- Bug 1962641 - Add "Count threads as cores" to Grafana dashboards
+
+* Wed Jun 2 2021 Aviv Litman <alitman@redhat.com> - 4.4.7.1
+- Bug 1877478 - Add network metrics to dwh
+- Bug 1961598 -Fix race in Termination.java
+- Fix indentation in uptime dashboard
+- Bug 1966574 - Update the required Grafana to 7.3
+
+* Wed May 26 2021 Aviv Litman <alitman@redhat.com> - 4.4.7
+- Update documentation in Trend dashboard
+- Add IOPS stats to fully_joined views
+- Bug 1952424 - Add Data Source variable to all dashboards
+- Bug 1849685 - packaging: grafana: Renew separate apache pki if needed
+- Bug 1948418 - Add memory, and CPU sizes to Hosts/VMs Trend dashboard
+- Bug 1896359 - Add count_threads_as_cores to DWH
+
+* Mon Apr 26 2021 Aviv Litman <alitman@redhat.com> - 4.4.6.3
+Fixed issues:
+- Bug 1929211 - Change IOPS data from Int to bigint
+
+* Tue Apr 20 2021 Aviv Litman <alitman@redhat.com> - 4.4.6.2
+Fixed issues:
+- Bug 1919984 - packaging: setup: Fix grafana pki conf after dwh
+- Bug 1870055 - packaging: setup: Move initialization of user/group to common
+- Delete unnecessary rows in create tables
+
+* Wed Apr 7 2021 Aviv Litman <alitman@redhat.com> - 4.4.6.1
+Fixed issues:
+- Update User Spice Session Activity to show per vm
+- Bug 1917874 - Add Resource size to Hosts/Virtual Machine Uptime panels
+- Add user session activity panel to vm dashboard
+- Bug 1861685 - Add filters to inventory dashboards
+- Fix the variables indentation in inventory dashboards
+- Fix the variables indentation in trend dashboards
+- Fix the variables indentation in service level dashboards
+- Fix the variables indentation in executive dashboards
+- Fix Storage Domain Total Size (over time) (BR21)
+
+* Wed Mar 17 2021 Aviv Litman <alitman@redhat.com> - 4.4.6
+Fixed issues:
+- Fix typo in Trend dashboard
+- Delete variables from host and vm dashboard
+- Bug 1853254 - Create links between reports in inventory dashboards
+- Bug 1853254 - Create links between reports in service level dashboards
+- Bug 1853254 - Create links between reports in executive dashboards
+- Bug 1935000 - Add a minimal Grafana version as dependent
+
+* Wed Mar 3 2021 Aviv Litman <alitman@redhat.com> - 4.4.5.5
+Fixed issues:
+- Fixing titles in Host and VM Dashboard
+- Add deleted entities to host/vm dashboard
+- Fix typo in hosts inventory dashboard
+
+* Thu Feb 18 2021 Aviv Litman <alitman@redhat.com> - 4.4.5.4
+Fixed issues:
+- Fix host CPU calculation
+
+* Tue Feb 16 2021 Aviv Litman <alitman@redhat.com> - 4.4.5.3
+Fixed issues:
+- Bug 1926124 - Add IOPS stats to vms trend dashboard
+- Bug 1926125 - Add IOPS stats to vms resource usage dashboard
+- Bug 1898863 - Add Host Dashboard to executive dashboards
+- Bug 1899529, Bug 1899573 - Add virtual machine Dashboard to executive dashboards
+- Fix VMs inventory dashboard name
+- Fix typo in service level dashboards
+- Fix virtual machine dashbiard to use V4_4
+- Fix the CPU calculation in hosts inventory
+- Bug 1926188 - Fix vms disks usage panels to show the average
+- Fix UI and columns settings to see properly the hosts inventory dashboard
+
+* Wed Feb 3 2021 Aviv Litman <alitman@redhat.com> - 4.4.5.2
+Fixed issues:
+- Bug 1922645 - typo on VMs/Hosts resource usage dashboard panels
+- Bug 1903977 - Fix Hosts/VMs Trend Dashboard to show 5/3 entities
+- Bug 1917848 - Add hardware panel to Hosts Inventory Dashboard
+
+* Wed Jan 27 2021 Shirly Radco <sradco@redhat.com> - 4.4.5.1
+Fixed issues:
+- Bug 1898858 - Add Multi-valu to Trend Dashboard Variables
+- Bug 1898858 - Add Multi-valu to Inventory Dashboard Variables
+- Bug 1898858 - Add Multi-valu to Service Level Dashboard Variables
+- Bug 1898858 - Add Multi-valu to Executive Dashboard Variables
+
+* Wed Jan 20 2021 Aviv Litman <alitman@redhat.com> - 4.4.5
+Fixed issues:
+- Fix division by 0 in inventory dashboards
+- Bug 1903977 - Fix Trend Dashboard to show 5 entities
+- Bug 1904047 - Add types of storage and storage domain to enum_translator table
+- Fix division by 0 in executive dashboards
+- Fix title in vms trend dashboard
+- Update the decimals to 'auto' in memory graphs
+- Bug 1912887 - Update variables in hosts/vms uptime dashboards
+- Bug 1887149 - Add VM Disks IOPS Stats to DWH
+- Fix alias in storage domains inventory
+- Bug 1910045 - Update data source in all dashboards
+- Bug 1914825 - Update queries to use v4_4 views in all dashboards
+- Fix UI to see the column names properly in the executive dashboard
+
+* Wed Dec 2 2020 Aviv Litman <alitman@redhat.com> - 4.4.4.2
+Fixed issues:
+- Bug 1866363 - Add variables to choose specific entity
+- Fix aliases in cluster dashboard
+
+* Thu Nov 19 2020 Shirly Radco <sradco@redhat.com> - 4.4.4.1
+Fixed issues:
+- Bug 1894298 - Makefile: Fix python3 dev env
+- packaging: Completely remove python2 support
+- Bug 1851725 - Add tags to grafana dashboards
+- Fix aliases in inventory dashboard
+
+* Wed Nov 11 2020 Shirly Radco <sradco@redhat.com> - 4.4.4
+Fixed issues:
+- Bug 1892247 - Fix data duplication at 00:00 each day
+- Fix names in Storage Domains Inventory Dashboard
+- Bug 1894420 - packaging: setup: Fix stop-remote-dwh
+- Fix Column names in Cluster Dashboard
+- Fix description in Virtual Machine Downtime (BR46) panel
+- Fix typo in system dashboard
+- Bug 1894420 - packaging: setup: Support stopping remote dwh also on non-engine machine
+- Bug 1894420 - packaging: setup: text: Note about remote dwh
+- Add docs/Notes-about-single-dwhd
+
+* Tue Oct 27 2020 Shirly Radco <sradco@redhat.com> - 4.4.3.2
+Fixed issues:
+- spec: Require only eap7-dom4j
+- Bug 1871865 - Update units setting in dashboards
+- Bug 1885654 - Fix resources usage queries to show the used resources
+- Bug 1851029 - Add to Inventory Dashboard queries the samples table
+- Bug 1851029 - Add to Executive Dashboard queries the samples table
+- Bug 1851029 - Add to Trend Dashboard queries the samples table
+- Bug 1851029 - Add to Service Level Dashboard queries the samples table
+- Bug 1853252 - Update Trend Dashboards to include all deleted entities
+- Bug 1853252 - Update Service Level Dashboards to include all deleted entities
+- Bug 1853252 - Update Executive Dashboards to include all deleted entities
+- Update decimals in executive dashboards
+- Update decimals in inventory dashboards
+- Update decimals in service level dashboards
+- Update decimals in trend dashboards
+
+* Wed Oct 14 2020 Shirly Radco <sradco@redhat.com> - 4.4.3.1
+Fixed issues:
+- Update memory_size_mb name in Inventory Dashboards
+- Fix typo in executive dashboard
+- packaging: setup: Do not duplicate db constants
+
+* Tue Sep 15 2020 Shirly Radco <sradco@redhat.com> - 4.4.3
+Fixed issues:
+- Bug 1866356 - Update the dashboards default time period
+- Bug 1861368 - packaging: setup: Give grafana more time to start
+- Fix typo in trend dashboard
+- Bug 1873087 - Update service level dashboards to show exact number of entities
+- Bug 1873087 - Update inventory dashboards to show exact number of entities
+- Bug 1873087 - Update trend dashboards to show exact number of entities
+- Bug 1873087 - Update executive dashboards to show exact number of entities
+- Bug 1846365 - packaging: grafana: rename: Handle engine conf
+- Bug 1874029 - Add missing column in inventory dashboard
+- Bug 1876802 - Adding a missing alias to a column settings
+- Bug 1853252 - Update Inventory Dashboards to include all deleted entities
+- Bug 1846365 - packaging: rename: Drop extra newline
+- Bug 1877280 - Remove time picker in hosts and vms inventory dashboard
+- Bug 1877706 - packaging: Fixed PostgreSQL vacuum SQL cmd. doc. ref.
+- Bug 1874880 - Update column settings in inventory dashboards
+- Bug 1874880 - Update column settings in executive dashboards
+- Bug 1878496 - Add delete_date columns to uptime dashboard
+- Bug 1874880 - Update column settings in service level dashboards
+
+* Wed Aug 19 2020 Shirly Radco <sradco@redhat.com> - 4.4.2.1
+Fixed issues:
+- Bug 1857778 - Add to Trend Dashboard a Hosts section
+- Bug 1847966 - grafana: Quote passwords
+- Bug 1866349 - Update descriptions in Executive dashboards
+- Bug 1866349 - Update descriptions in inventory dashboards
+- Bug 1866349 - Update descriptions in trend dashboards
+- Bug 1866349 - Update descriptions in service level dashboards
+
+* Thu Aug 06 2020 Shirly Radco <sradco@redhat.com> - 4.4.2
+Fixed issues:
+- Bug 1846365 - packaging: rename: Handle config conditionally
+- Bug 1852752 - Fix bug in Hosts Trend Dashboard
+- Add number of query to the title
+- Fix the titles and columns name
+
+* Wed Jul 01 2020 Shirly Radco <sradco@redhat.com> - 4.4.1.2
+Fixed issues:
+- Bug 1852390 - Fix bug in Trend Dashboard
+- Bug 1852405 - Update Average CPU Usage and Peaks (over time) (BR10A)- Trend dashboard
+
+* Tue Jun 30 2020 Shirly Radco <sradco@redhat.com> - 4.4.1.1
+Fixed issues:
+- Bug 1846256 - grafana: Do not automatically create users via SSO
+- Bug 1846870 - packaging: grafana: Restart the engine for SSO
+- Bug 1848435 - Update executive dashboard indentation and description
+- Bug 1846365 - packaging: rename: Handle grafana.ini
+- Bug 1846365 - packaging: rename: Make sure grafana service is started
+- Bug 1846365 - packaging: rename: Handle SSO
+- Bug 1849423 - Update trend dashboard indentation and description
+- Bug 1848613 - Update service level dashboard indentation and description
+- packaging: setup: Add a newline before a long question
+- Bug 1849965 - Update inventory dashboard
+- Update mem_threshold and cpu_threshold
+- Bug 1848381 - Add to dashboars description panel
+
+* Tue Jun 09 2020 Shirly Radco <sradco@redhat.com> - 4.4.1
+Fixed issues:
+- Bug 1814643 - Add grafana integration support
+- Bug 1814643 - Add initial Grafana dashboards
+- Update Grafana dashboards
+- Add uid for Grafana data source
+- licensing: Clarify
+- licensing: Replace copyright notices in most source files
+- licensing: automation: check-patch: Reject notices
+- packaging: setup: Support separate grafana machine
+- Bug 1845049 - packaging: setup: Add grafana access URL to engine conf
+- packaging: grafana: Do not ask engine fqdn on upgrade
+- packaging: cleanup: grafana: Do not fail if db is missing
+
+* Tue Apr 07 2020 Shirly Radco <sradco@redhat.com> - 4.4.0.2
+Fixed issues:
+- Bump to pg12 and get rid of SCL
+
+* Tue Mar 24 2020 Shirly Radco <sradco@redhat.com> - 4.4.0.1
+Fixed issues:
+- pg12: remove deprecated 'WITH OID'
+
+* Wed Feb 12 2020 Shirly Radco <sradco@redhat.com> - 4.4.0
+Fixed issues:
+- build: moved major version to 4.4.0
+- docs: point to postgresql 10 docs for vacuum
+- lint: drop unused variables
+- Bug 1673808 - Close DWH db connections open transactions
+- Bug 1727550 - packaging: Require postgresql-contrib
+- Bug 1730384 - Fix closed connections issue
+- packaging: setup: Remove unused method name DB_CONNECTION_STATUS
+- Bug 1761494 - packaging: spec: Add sclenv to dwh conf
+- Bug 1761494 - packaging: bin: dwh-vacuum: Source prolog
+- Bug 1761494 - tools: dwh-vacuum.sh must enable SCL if used by the engine.
+- Bug 1734718 - Update java to OpenJDK 11
+- packaging: Use dom4j from wildfly
+- Build for el8, with python3
+- spec: Require SCL PostgreSQL only on EL7
+- make: Set correct permissions for ovirt-engine-dwhd.py
+- Search dom4j also in eap7
+
+* Mon Dec 10 2018 Shirly Radco <sradco@redhat.com> - 4.3.0
+Fixed issues:
+- Bug 1614818 - core: Require PostgreSQL 10
+
+* Thu Nov 22 2018 Shirly Radco <sradco@redhat.com> - 4.3.0
+Fixed issues:
+- Bug 1639006 - packaging: support python2/3
+- Packaging: Spec: Disable Python bytecompile feature on EL7
+
+* Mon Oct 8 2018 Shirly Radco <sradco@redhat.com> - 4.3.0
+Fixed issues:
+- Bug 1546486 - build: fix dwh to support dom4j 2.0.0
+- Bug 1573145 - history: fix bug in rx and tx rate percent percition
+- Bug 1586011 - packaging: Do not connect to databases if provisioning a db
+- Bug 1576937 - fix bug with logical_network_name lenght
+- Bug 1573145 - history: update rx and tx rate percent percition
+- Bug 1577789 - automation: Use dnf-utils on Fedora
+- Bug 1507037 - history: wait longer before first sampling
+- Bug 1518802 - dbms: upgrade: compare engine DBMS port and DWH one as string
+- packaging: Do not fail engine-cleanup if engine db is inaccessible
+- Bug 1547018 - packaging: setup: postgres95: Do not clear db on upgrade rollback
+- Bug 1546969 - packaging: setup: Do not fail on missing POSTGRES_PROVISIONING_ENABLED
+- Bug 1546487 - packaging: setup: postgres95: Fixes
+- Bug 1540627 - spec: Change permissions for /var/log/ovirt-engine-dwh
+- build: update dwh-classpath
+- build: moved major version to 4.3.0
+- Bug 1507294 - build: Use ovirt-engine-wildfly dom4j
+- Bug 1529489 - packaging: setup: Create pgpass only if password is not None
+- Bug 1541924 - history: Update stat. table history_id to bigint
+
+* Tue Jan 23 2018 Shirly Radco <sradco@redhat.com> - 4.2.1.2
+Fixed issues:
+- Bug 1490941 - history: update dwh-vacuum help message
+- Bug 1535935 - packaging: setup: Schedule 10-setup-database.conf
+- Bug 1535935 - packaging: setup: Provisioning.applyEnvironment only at MISC
+
+* Wed Jan 17 2018 Shirly Radco <sradco@redhat.com> - 4.2.1.1
+Fixed issues:
+- Bug 1490941 - history: update dwh-vacuum help message
+
+* Wed Nov 29 2017 Shirly Radco <sradco@redhat.com> - 4.2.1
+Fixed issues:
+- Bug 1474570 - Revert "packaging: setup: Configure scale only on new database"
+
+* Thu Oct 26 2017 Shirly Radco <sradco@redhat.com> - 4.2.0
+Fixed issues:
+- Bug 1167903 - setup: Add dwh-packages to versionlock filter
+- Bug 1482043 - update vm template name length
+- Bug 1432916 - remove image_id collection
+- Bug 1478859 - update etl sampling interval to 60s
+- Bug 80795 - postgres95: enable postgres95 migration support
+- Bug 81476, 1459134 - postgres95: require postgres-server upgrade from setup
+- Bug 1490272 - Fix minimal ETL version check for a float patch level
+- Bug 1490272 - fix minimal version check
+- Bug 1492065 - spec: Require new engine-common setup plugin
+- Bug 1465825 - validate lastHourAgg value
+
+* Thu Jul 27 2017 Shirly Radco <sradco@redhat.com> - 4.2.0
+Fixed issues:
+- Bug 1371111 - history: heartbeat error message interval
+- packaging: spec: move to headless java
+- Bug 1263785 - packaging: setup: Move dwh-plugins from engine to dwh
+- Bug 1431632 - packaging: setup: Display the DWH setup requirement better to the user
+- Bug 1409766 - packaging: Add a tool to perform vacuum on dwh db
+
+* Wed Dec 21 2016 Shirly Radco <sradco@redhat.com> - 4.1.0
+Fixed issues:
+- Bug 1399162 - Fixed firstSync updating process
+- Bug 1398944 - updated users collection
+- Bug 1364062 - setup: Notify to restart remote engine
+- Bug 1263785 - setup: Remove constants duplication
+- Bug 1365427 - setup: Configure scale only on new database
+- Bug 1366900 - spec: Allow upgrade directly from 3.6
+- Bug 1349309 - lower sampling interval
+- Bug 1332892 - setup: Do not write db password to answerfile if provisioning
+- Bug 1347281 - dropped all history database foreign keys
+- Bug 1347996 - added index to vm disks usage tables
+
+
+* Tue May 31 2016 Shirly Radco <sradco@redhat.com> - 4.0.0
+Fixed issues:
+- Bug 1338495 - remove collection of vm_disk_interface
+- Bug 1302598 - added over_time views to simplify use
+- Bug 1324440 - Added log message - Application Settings
+- Bug 1328805 - Allow choosing scale
+- Bug 1318665 - Copy db creds to engine
+- Bug 1328860 - Move DBTransaction to common
+
+* Thu Apr 21 2016 Shirly Radco <sradco@redhat.com> - 4.0.0
+Fixed issues:
+- Bug 1302611 - spec: Require java 8
+- Bug 1318665 - setup: Note that dwh is required
+- Bug 1300328 - removed collection of dc statistics
+- Bug 1321517 - changed the limit in  DeleteTimekeeping job
+- Bug 1285788 - enabled logging of dwh ETL process in debug mode
+- Bug 1323605 - removed collection of vm_disks_map
+- Bug 1302611 - rebase to talend open studio 6.1.1
+- Bug 1312638 - removed dwh views up to 3.6
+- Bug 1311149 - change vds_groups to cluster
+
+* Mon Dec 21 2015 Shirly Radco <sradco@redhat.com> - 3.6.2
+Fixed issues:
+- Bug 1286441 - restoring connection to postgres for audit_log and dwh_history_timekeeping.
+- Bug 1289983 - engine_db_timekeeping fix for rename
+
+* Tue Nov 24 2015 Shirly Radco <sradco@redhat.com> - 3.6.1
+Fixed issues:
+- Bug 1193318 - Fix Data Warehouse service name
+
+* Wed Sep 02 2015 Yaniv Dary <ydary@redhat.com> - 3.6.0
+oVirt 3.6 Beta 4 release.
+
+Fixed issues:
+- Bug 1254003 - removed fk that cause deadlock occasionally
+
+* Wed Aug 12 2015 Yaniv Dary <ydary@redhat.com> - 3.6.0
+Fixed issue:
+- Bug 1233193 - ETL service sampling error -
+  RuntimeException: Child job running failed
+
+* Tue Aug 11 2015 Yaniv Dary <ydary@redhat.com> - 3.6.0
+Fixed issues:
+- Bug 1195395 - ETL service aggregation to hourly tables is
+  failing due to NullPointerException for specific timezones
+  due to the way the ETL interprets the timezone
+- Bug 1231691 - Update cached/buffered memory to bigint
+
+* Mon Sep 15 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- Refixed updated statistics history_id to bigint (#1121994)
+
+* Sun Sep 07 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- updated runTime from engine db (#1133608)
+- Prevent more than one dwh per engine (#1118350)
+- updated etl to check valid installation (#1118350)
+
+* Tue Aug 26 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- updated statistics history_id to bigint (#1121994)
+
+* Sun Aug 10 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- add dwh to versionlock
+
+* Tue Aug 05 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- fixed etl-update users delete date (#1124458)
+
+* Mon Aug 04 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- updated insert_calendar_table_values script
+
+* Sun Jul 13 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- test only config file db password (#1094016)
+- filter engine db password
+- fixed users external_id type due to engine change (#1113193)
+- Allow dwh on separate host (#1080997)
+- remove dependency loop in setup
+- reorg the per component directory
+- split of engine-setup-plugin
+
+* Thu Jun 5 2014 Shirly Radco <sradco@redhat.com> - 3.5.0
+Fixed issues:
+- Force a minimal ETL version (#1059283)
+- sync users data for user usage tables (#1091687)
+- update user and system cpu usage percent (#1078897)
+- Fixed sleep time for delete/aggregations (#1086389)
+- Change Fields "Network Name" to "Logical Network Name" (#891073)
+- Do not fail on errors while restoring permissions (#1073471)
+- use db creds from answer file (#1094016)
+- engine-setup check remote database is empty (#1056528)
+
+* Sun Mar 30 2014 Yaniv Dary <ydary@redhat.com> - 3.4.1
+Fixed issues:
+- io.StringIO needs unicode (See releated BZ #1079911)
+- fixed generated code issue (#1076902)
+
+* Mon Mar 24 2014 Yaniv Dary <ydary@redhat.com> - 3.4.0-2
+Fixed issues:
+- move connect to database library (#1067058)
+- suppress password based on env key (#1072476)
+- align manual instructions with defaults (#1067548)
+- 'Install' is now 'Configure' in DWH/Reports questions (#1064876)
+- updated ksm_shared_memory_percent to mb (#1076902)
+- preserve custom db users permissions on upgrade (#1073471)
+- read legacy config with trivial parser (#1079911)
+
+* Wed Feb 12 2014 Yaniv Dary <ydary@redhat.com> - 3.4.0-1
+3.4.0 GA release.
+
+Fixed issues:
+1070757 - support postgres user length within schema version
+1065730 - No option to setup with diffrrent name as it looks for upstream packages names always
+
+* Wed Feb 12 2014 Yaniv Dary <ydary@redhat.com> - 3.4.0
+Features added:
+967350/1058012 - port dwh installer to otopi
+1030466 - ovirt-engine-dwh-setup should stored values provided in interactive setup in the answer file
+1023754 - add trigger to stop etl connection via engine db value
+1052383 - collect the "created_by" field of a VM into it's configuration history
+848410 - alternate method for service shutdown
+
+Fixed issues:
+1057239 - dwh-setup fails because of unexpected output in login shell without reasonable error message
+
+* Thu Jan 09 2014 Yaniv Dary <ydary@redhat.com> - 3.3
+Refixed issue:
+- fix ugprade with remote db (#1046676)
+
+* Thu Jan 02 2014 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- Backup before doing any changes to the database (#1046679\1046676)
+- Fixed remote install setup (#1045846\1047392\1045855)
+
+* Wed Dec 18 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- detect existing DB in remote flows (#1026947)
+- correctly configure Default.properties (#1026947)
+- handle answerfile correctly (#1040029)
+- do not create db md5 files in production (#1043951)
+- rename config values to match engine convention (#1043951)
+- remove 10-setup-database-dwh.conf from package (#1043951)
+- rename /etc/ovirt-engine-dwh/engine-dwh.conf.d->/etc/ovirt-engine-dwh/ovirt-engine-dwhd.conf.d (#1043951)
+- Pass full log path to database schema creation script (#1040026)
+
+* Wed Dec 11 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- Adds COPYING.csv to conform to 3.3 manifest
+- add read user validation for alphanumeric chars (#1037861)
+
+* Tue Nov 26 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issue:
+- update postgres service restart functionality (#1029969)
+
+* Sun Nov 24 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- Setup now sets correct umask for execution.
+- Fixed test on postgres status (#1029969).
+
+* Thu Nov 21 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- added a test on postgres status (#1029969)
+- update log permissions on service start (#1031992)
+
+* Wed Nov 13 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issue:
+update Makefile and spec to include DB settings (#1026089)
+
+* Sun Nov 10 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Changes in setup:
+- fixed function of database user creation (#1027894)
+- removed unneeded chown that causes error on service actions
+- improve dwhd service handling (#1022550)
+- fix DB detection and owner from previous versions (#1015859)
+
+* Wed Nov 06 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Add answer file use in setup (#1025336)
+
+* Thu Oct 31 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Changed the db dict get method (#1024792)
+
+* Tue Oct 29 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Resynced db creation scripts.
+Also fixed issues:
+- Added clear instructions for creating remote DB (#1021560)
+
+* Wed Oct 23 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+853955 - There should be no exception shown to a user when running setup with non root user
+1019741 - installation - size of the detected DB should be in MB
+1019758 - installation - misleading message
+
+* Tue Oct 15 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+- update discovery of JAVA_HOME (#1019178)
+- fixed etl error when hosts are non-responsive (#1008370)
+- run dwh service as an ovirt user (#772001)
+- fixed issue with many ips in vm users table (#1016968)
+- run readonly user creation with non-empty user (#1008562)
+- added systemd handling to common_utils (#1011544)
+- validating read-only user before creation (#1006948)
+
+* Tue Oct 08 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed setup issues:
+- added welcome message (#1011542)
+- stop and notify if setup is not run as root (#853955)
+- save configuration immediately as available (#1006950)
+
+* Tue Oct 01 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed postgres.conf handling (#1014031)
+
+* Tue Sep 24 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Added OS info sync to enum table (#985346)
+
+* Mon Sep 16 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Added missing column to 3.3 views.
+
+* Mon Sep 09 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed verious installation issues with engine otopi setup.
+Setup now works in clean local\remote setup of 3.3.
+
+* Tue Aug 13 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Added feature:
+- boolean on logged in vm guest user
+
+* Thu Aug 08 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed two setup issues:
+- 990095 - packaging: setup: updated read-only user permissions
+- 991760 - packaging: setup: call psql with correct env
+Also:
+- resynced the create db scripts
+- made several changes to vm disks tables
+
+* Wed Jul 31 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed verious setup issues:
+- 990124 - fixed password handling for configuration
+- 988045 - fixed pg_hba handling
+- 988298 - updated 'su' utility location
+- fixed failuare to create engine dwh db because of locale
+
+* Thu Jul 25 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issues:
+883120 - [RFE] Ability to associate VMs with a pool in the engine and DWH
+987517 - DWH - some vms don't sync
+
+* Tue Jul 09 2013 Yaniv Dary <ydary@redhat.com> - 3.3
+Fixed issue:
+- 970543 - ovirt-engine-dwh-setup doesn't support option --help
+
+* Thu Jun 13 2013 Yaniv Dary <ydary@redhat.com> - 3.2.1
+Refixed issue:
+- fixed issue with enum strings insertion (#952418)
+
+* Wed Jun 12 2013 Yaniv Dary <ydary@redhat.com> - 3.2.1
+Fixed issues:
+- fixed issue with enum strings insertion (#952418)
+- added missing enum keys for OS (#966437)
+
+* Wed May 08 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Fixed issue:
+953148 - ETL does not populate the dwh db.
+
+* Thu Mar 21 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Updated manifest file and localization files.
+
+Fixed issues:
+913384 - Upgrade - Error Can't start the ovirt-engine-dwhd service (Upgrade from si25.4 to si27.1)
+921445 - Update manifest file for 3.2
+
+* Thu Mar 07 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Reverted:
+913384 - Upgrade - Error Can't start the ovirt-engine-dwhd service (Upgrade from si25.4 to si27.1)
+
+Change on the engine side caused engine DB deadlock of nested transactions attempting to update the same
+record. Without that change this patch will not work.
+
+* Wed Mar 06 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Refixed issue:
+902028 - Table audit_log - No Logs in table for an exception (Blocks DNS using iptables)
+
+Fixed issue:
+913384 - Upgrade - Error Can't start the ovirt-engine-dwhd service (Upgrade from si25.4 to si27.1)
+
+* Wed Feb 13 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Fixed issue:
+902028 - Table audit_log - No Logs in table for an exception (Blocks DNS using iptables)
+
+* Tue Feb 05 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Fixed issues:
+- 892278 - [ovirt-engine-dwh] dwh-setup fails.
+- 894716 - History DB - No Statisitics in hourly and daily tables
+
+* Wed Jan 02 2013 Yaniv Dary <ydary@redhat.com> - 3.2.0
+Fixed issues:
+- 846272 - PRD32 - RFE - Add storage domains status in the History DB
+- 885640 - remove is_auto_suspend field
+- 889755 - Service - Add "pid" string in /etc/init.d/ovirt-engine-dwhd service message [TEXT]
+
+* Thu Dec 27 2012 Yaniv Dary <ydary@redhat.com> - 3.2.0
+- Added 3.2 views.
+- Added user statistics usage tables and aggregation.
+- Moved to Talend DI 5.1.2 code generation.
+
+* Thu Nov 15 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Fixed bugs:
+876227 - upgrade - dwh upgrade doesn't rename the old DB
+876240 - upgrade - Reports doesnt work after upgrade (IC is empty and reports doesnt execute)
+876242 - upgrade - dwh service fails to start (java.lang.ClassNotFoundException:)
+
+* Sun Nov 04 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Updated DWH ENUM localization
+
+* Tue Oct 23 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Bugs fixed:
+800372 - vm system cpu usage is always 0.
+840866 - History DB - View v3_1_host_hourly_history_view shows 61 minutes instead of 60 minutes (Column minutes_in_status)
+866492 - Duplicate rows in Views
+
+
+* Tue Oct 09 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+- Added upgrade flow from 3.0 to 3.1.
+- The host mac address field is extended to 59 so it could store
+  InfiniBand HCA mac address.
+
+Bugs Fixed:
+823397 - Extend host mac address to support IB HCA
+858569 - Replace JBoss service name with ovirt-engine
+
+* Tue Sep 04 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Bugs Fixed:
+841217  - History DB - Incorrect column name fqn_or_ip in View v3_1_host_configuration_view
+
+* Tue Aug 28 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Bugs Fixed:
+851833  - [ovirt-dwh] - ETL - Fails to connect to oVirt Engine Portal
+
+* Tue Aug 21 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Bugs Fixed:
+850330 - Setup fails on missing file
+781979 - ETL copies the templates images as disks
+844667 - Remote DB - DWH Setup fails to upgrade remote history DB
+
+* Mon Jul 16 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+bug fixed:
+838292 - logrotate - DWH Log is not log-rotating correctly
+840273 - Views v3_x_vm_disk_samples_history_view are empty
+840283 - Views v3_x_vm_device_history_view are empty
+
+* Wed Jul 04 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+bug fixed:
+834869 - Installer - Failed to create history DB
+
+* Fri Apr 20 2012 Yaniv Dary <ydary@redhat.com> - 3.1.0
+Changed from 3.0 release:
+- Project was renamed to ovirt-engine-dwh
+- DB was renamed to ovirt_engine_history
+- Added 3.1 API views.
+- Added vm devices history (deprecated vm disks map).
+- Added floating disks history.
+- Added engine up status check. Samples only collected when engine is up.
+- Added pushing audit log events in case of etl start\stop and error.
+- Added a watch dog.
+- Added new columns to the API.
+
+bugs fixed:
+728768  - [History] - Missing ENUM values for USB policy in vm configuration.
+755865  - Ad Hoc - missing enum for "VM disk storage type" (3) in report
+756405  - command support in 'ja_JP-UTF-8' environment
+766636  - postgreSQL locks the CPU on 100%
+768721  - Need to update ETL generated code.
+768755  - ETL copies duplicate entries of all hosts every hour.
+770644  - history: Unable to create a database with a MINUS sign in its name
+781470  - Stored Procedure dbo.dwh_history_aggregate_level fails to execute successfully
+781979  - ETL copies the templates images as disks
+783197  - When moving the database from one time zone to another many reports stop working.
+817519  - [ovirt-dwh] - jbossas cannot start (ETL occupies port 8080)
+772925  - RFE - ETL service start/stop should be logged in oVirt event log and send a notification by mail
+772916  - RFE - ovirt-etl should have a WatchDog
+770679  - [ovirt-dwh] - Cannot Create the ovirt_history database using the create_db.sh script
+749664  - Store number of CPU sockets
+749663  - Store CPU speed in Megahertz
+817756  - [ovirt-dwh] - oVirt-ETL log should be under /var/log/ovirt-engine
+783787  - [ovirt-etl] - Sample History - Saves data in host_samples_history_table/View for more then 48H
+
+* Thu Apr 19 2012 Yaniv Dary <ydary@redhat.com> - 3.0.0-1.fc16
+- Added packaging to dwh

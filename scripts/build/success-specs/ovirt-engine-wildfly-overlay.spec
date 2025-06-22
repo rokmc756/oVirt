@@ -1,0 +1,87 @@
+Name:		ovirt-engine-wildfly-overlay
+Version:	24.0.1
+Release:	1%{?dist}
+Summary:	WildFly overlay for ovirt-engine
+Group:		Virtualization/Management
+License:	ASL-2.0
+URL:		http://www.ovirt.org
+BuildArch:	noarch
+Source0:	README.md
+
+Requires:	ovirt-engine-wildfly = %{version}-%{release}
+
+
+%description
+WildFly overlay for ovirt-engine
+
+
+%install
+install -d -m 0755 "%{buildroot}%{_docdir}/%{name}"
+install -m 0644 "%{SOURCE0}" "%{buildroot}%{_docdir}/%{name}/README.md"
+install -d -m 0755 "%{buildroot}%{_datadir}/%{name}/modules"
+
+
+%files
+%{_datadir}/%{name}/
+%{_docdir}/%{name}/
+
+
+%changelog
+* Mon Oct 11 2021 Artur Socha <asocha@redhat.com> 24.0.1-1
+- Initial release for Wildfly 24.0.1
+
+* Wed May 19 2021 Artur Socha <asocha@redhat.com> 23.0.2-1
+- Initial release for Wildfly 23.0.2
+
+* Fri Jan 15 2021 Artur Socha <asocha@redhat.com> 22.0.0-1
+- Initial release for Wildfly 22.0.0
+
+* Tue Dec  1 2020 Martin Perina <mperina@redhat.com> 21.0.2-1
+- Initial release for WildFly 21.0.2
+- Remove bundled httpclient-4.5.12.jar and httpcore-4.4.13.jar, because
+  required versions are already included in WildFly 21.0.2
+
+* Wed Jul 15 2020 Martin Perina <mperina@redhat.com> 19.1.0-2
+- Update to httpclient-4.5.12.jar and httpcore-4.4.13.jar to fix
+  https://issues.apache.org/jira/browse/HTTPCLIENT-2047
+
+* Fri Jun 12 2020 Martin Perina <mperina@redhat.com> 19.1.0-1
+- Initial release for WildFly 19.1.0
+
+* Sat Jan 25 2020 Martin Perina <mperina@redhat.com> 18.0.1-1
+- Initial release for WildFly 18.0.1
+
+* Fri Nov 1 2019 Martin Perina <mperina@redhat.com> 18.0.0-1
+- Initial release for WildFly 18.0.0
+
+* Tue Jul 23 2019 Martin Perina <mperina@redhat.com> 17.0.1-1
+- Initial release for WildFly 17.0.1
+
+* Mon Jun 3 2019 Martin Perina <mperina@redhat.com> 17.0.0-1
+- Initial release for WildFly 17
+
+* Mon Apr 29 2019 Martin Perina <mperina@redhat.com> 16.0.0-1
+- Initial release for WildFly 16
+
+* Fri Feb 1 2019 Martin Perina <mperina@redhat.com> 15.0.1-1
+- Initial release for WildFly 15
+
+* Fri Oct 5 2018 Martin Perina <mperina@redhat.com> 14.0.0-2
+- Add WildFly major version to package name
+- Obsolete packages providing overlays for previous WildFly versions
+
+* Wed Sep 26 2018 Martin Perina <mperina@redhat.com> 14.0.0-1
+- Initial release for WildFly 14
+
+* Fri Sep 21 2018 Martin Perina <mperina@redhat.com> 13.0.0-2
+- Add 'Provides ovirt-engine-wildfly-overlay-13' and
+  'Requires: ovirt-engine-wildfly-13' to simplify upgrade of WildFly in CI
+
+* Wed May 23 2018 Martin Perina <mperina@redhat.com> 13.0.0-1
+- Initial release for WildFly 13
+
+* Mon Aug 28 2017 Martin Perina <mperina@redhat.com> 11.0.1-1
+- Added dependency on relevant ovirt-engine-wildfly package
+
+* Tue Aug 15 2017 Martin Perina <mperina@redhat.com> 11.0.0-1
+- Initial release for WildFly 11

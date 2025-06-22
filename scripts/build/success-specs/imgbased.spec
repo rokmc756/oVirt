@@ -1,0 +1,281 @@
+
+%{!?with_check:%global with_check 0}
+
+%global _configure ../configure
+
+
+Name:           imgbased
+Version:        1.2.25
+Release:        %{?_release}%{?!_release:1}%{?dist}
+Summary:        Tools to work with an image based rootfs
+
+License:        GPLv2+
+URL:            https://github.com/oVirt/imgbased
+Source0:        http://resources.ovirt.org/pub/src/%{name}/%{name}-%{version}.tar.xz
+
+BuildArch:      noarch
+
+
+BuildRequires:       make
+BuildRequires:       automake
+BuildRequires:       autoconf
+BuildRequires:       rpm-build
+BuildRequires:       git
+BuildRequires:       asciidoc
+BuildRequires:       systemd-units
+
+Requires:            python%{python3_pkgversion}-imgbased
+
+Requires:            lvm2
+Requires:            util-linux
+Requires:            augeas
+Requires:            rsync
+Requires:            tar
+Requires:            openscap-scanner
+Requires:            grubby
+
+%{!?_licensedir:%global license %%doc}
+
+%description
+This tool enforces a special usage pattern for LVM.
+Basically this is about having read-only bases and writable
+layers atop.
+
+%package -n python%{python3_pkgversion}-imgbased
+Summary: A python 3 module for imgbased
+BuildRequires:       python%{python3_pkgversion}-devel
+%if 0%{?with_check}
+BuildRequires:       python%{python3_pkgversion}-pycodestyle
+BuildRequires:       python%{python3_pkgversion}-pyflakes
+BuildRequires:       python%{python3_pkgversion}-nose
+BuildRequires:       python%{python3_pkgversion}-six
+BuildRequires:       python%{python3_pkgversion}-systemd
+%endif
+Requires:       python%{python3_pkgversion}-systemd
+Requires:       python%{python3_pkgversion}-rpm
+Requires:       dnf-plugin-versionlock
+Requires:       python%{python3_pkgversion}
+
+%description -n python%{python3_pkgversion}-imgbased
+python%{python3_pkgversion}-imgbased is a python 3 library to manage lvm layers
+
+%prep
+%setup -q
+
+%build
+
+mkdir py3 && pushd py3
+%configure PYTHON="%{__python3}"
+make %{?_smp_mflags}
+
+%install
+install -Dm 0644 src/plugin-dnf/imgbased-persist.conf \
+                 %{buildroot}/%{_sysconfdir}/dnf/plugins/imgbased-persist.conf
+install -Dm 0644 src/plugin-dnf/imgbased-persist.py \
+                 %{buildroot}/%{python3_sitelib}/dnf-plugins/imgbased-persist.py
+
+install -Dm 0644 data/imgbase-setup.service %{buildroot}%{_unitdir}/imgbase-setup.service
+install -Dm 0444 data/imgbased-pool.profile %{buildroot}%{_sysconfdir}/lvm/profile/imgbased-pool.profile
+
+make -C py3 install DESTDIR="%{buildroot}"
+
+
+%files
+%doc README.md
+%license LICENSE
+%{_sbindir}/imgbase
+%{_datadir}/%{name}/hooks.d/
+%{_mandir}/man8/imgbase.8*
+/%{_docdir}/%{name}/*.asc
+%{_unitdir}/imgbase-setup.service
+%{_sysconfdir}/lvm/profile/imgbased-pool.profile
+%{_sysconfdir}/dnf/plugins/imgbased-persist.conf
+%{python3_sitelib}/dnf-plugins/imgbased-persist.py*
+%{python3_sitelib}/dnf-plugins/__pycache__/imgbased*
+
+%files -n python%{python3_pkgversion}-imgbased
+%doc README.md
+%license LICENSE
+%{python3_sitelib}/%{name}/
+
+%changelog
+* Wed Feb 23 2022 Sandro Bonazzola <sbonazzo@redhat.com> - 1.2.24-1
+- Split /var/tmp to its own partition (rhbz#2055829)
+
+* Wed Jul 14 2021 Lev Veyde <lveyde@redhat.com> - 1.2.23-1
+- Fixed vdsm-tool running env. (rhbz#1979624)
+
+* Sun Jul 11 2021 Lev Veyde <lveyde@redhat.com> - 1.2.22-1
+- Fixed SELinux binary policy migration issue (rhbz#1979624)
+
+* Thu May 27 2021 Lev Veyde <lveyde@redhat.com> - 1.2.21-1
+- Fixed SUID/SGID handling issue (rhbz#1964490)
+
+* Wed May 19 2021 Lev Veyde <lveyde@redhat.com> - 1.2.20-1
+- Fixed SELinux policy issue (rhbz#1955415)
+
+* Tue Apr 20 2021 Lev Veyde <lveyde@redhat.com> - 1.2.19-1
+- Added auto-healing for persistent RPM reinstallation (rhbz#1936972)
+
+* Wed Mar 17 2021 Lev Veyde <lveyde@redhat.com> - 1.2.18-1
+- Fixed the issue with persistent RPM reinstallation (rhbz#1936972)
+
+* Thu Feb 11 2021 Asaf Rachmani <arachman@redhat.com> - 1.2.17-1
+- bootsetup: copy kernel to boot partition (rhbz#1907746)
+
+* Fri Jan 29 2021 Nir Levy <nlevy@redhat.com> - 1.2.16-1
+- osupdater: fix upgrade failed for FileNotFoundError
+  caused by bug in crypto-policy (rhbz#1921646)
+  (rhbz#1918207, rhbz#1921553)
+
+* Wed Jan 13 2021 Asaf Rachmani <arachman@redhat.com> - 1.2.15-1
+- osupdater: Add chronyd.service to the required_files list (rhbz#1903777)
+- osupdater: Do not change UID/GID in remediate_etc (rhbz#1909782)
+
+* Wed Dec 02 2020 Nir Levy <nlevy@redhat.com> - 1.2.14-1
+- osupdater: Change crypto-policies files permissions (rhbz#1902646)
+
+* Wed Sep 30 2020 Nir Levy <nlevy@redhat.com> - 1.2.13-1
+- osupdater: migrate_etc
+  copy folders to correct dirname (rhbz#1883195)
+
+* Thu Sep 17 2020 Nir Levy <nlevy@redhat.com> - 1.2.12-1
+- Reconfigure lvm filter (rhbz#1837864)
+- making sure lvm filters from the old layer are set
+  to stable name based on UUID
+
+* Wed Sep 02 2020 Nir Levy <nlevy@redhat.com> - 1.2.11-1
+- Making sure support for multipath in initramfs (rhbz#1837864)
+
+* Wed Jun 03 2020 Nir Levy <nlevy@redhat.com> - 1.2.10-1
+- bootsetup: keep cmdline arguments order (rhbz#1827232)
+
+* Fri Apr 17 2020 Sandro Bonazzola <sbonazzo@redhat.com> - 1.2.9-1
+- utils: verify grubenv size (rhbz#1809367)
+
+* Tue Mar 10 2020 Sandro Bonazzola <sbonazzo@redhat.com> - 1.2.8-1
+- bootsetup: add discard to rootflags (rhbz#1803017)
+
+* Tue Jan 21 2020 Yuval Turgeman <yturgema@redhat.com> - 1.2.7-1
+- Use current layer only when remediating /etc (rhbz#1780331)
+- Handle grubenv in EFI environment (rhbz#1779661, rhbz#1765250)
+- Touch a file to mark a successfull upgrade (rhbz#1770893)
+- Do not persist appliance packages (rhbz#1777886)
+- Skip volume creation during init and update (rhbz#1777886)
+- Clear dnf cache
+
+* Tue Nov 12 2019 Yuval Turgeman <yturgema@redhat.com> - 1.2.6-1
+- Install first image-update rpm (rhbz#1770683)
+
+* Thu Nov 07 2019 Yuval Turgeman <yturgema@redhat.com> - 1.2.5-1
+- Disable repos if set-enabled is not set (rhbz#1766579)
+- Decode bytes when running oscap (rhbz#1760217)
+- Install image-update rpm if passed in environment (rhbz#1747410)
+- Stop vdsm services before update (rhbz#1747410)
+- Add IMGBASED_KEEP_VOLUMES env variable (debugging)
+- Add IMGBASED_DISABLE_THREADS env variable (debugging)
+- Warn when selinux is disabled (rhbz#1724102)
+- Run ldconfig on new layer (rhbz#1726534)
+- Handle multiple kernel rpms as hotfixes
+- Move more code to python3
+- Refactor bootloader setup code
+
+* Mon Feb 25 2019 Yuval Turgeman <yturgema@redhat.com> - 1.1.5-1
+- Do not use hostonly when generating an initrd (rhbz#1652519)
+
+* Wed Feb 20 2019 Yuval Turgeman <yturgema@redhat.com> - 1.1.4-1
+- Added imgbase-setup.service
+- Apply registered OpenSCAP profile on updates (rhbz#1654253)
+- Mask lvm2-lvmetad on build (rhbz#1652795)
+
+* Tue Jan 15 2019 Yuval Turgeman <yturgema@redhat.com> - 1.1.3-1
+- Relabel for selinux in permissive (rhbz#1655003)
+
+* Wed Jan 09 2019 Yuval Turgeman <yturgema@redhat.com> - 1.1.2-1
+- Disable grub os probes (rhbz#1501236)
+- Call relabel_selinux at the very end of the update (rhbz#1655003)
+- Copy insights files to new location (rhbz#1649658)
+- Sync existing files in /var (rhbz#1643733)
+- Reconfigure vdsm in upgrade (rhbz#1636028)
+
+* Tue Nov 20 2018 Yuval Turgeman <yturgema@redhat.com> - 1.1.1-1
+- Rename volumes bz#1641543
+- Conditionally migrate ntp to chrony bz#1638606
+- Handle fsck return code bz#1645395
+- Be careful when handling grub.cfg
+
+* Sun Oct 14 2018 Yuval Turgeman <yturgema@redhat.com> - 1.1.0-1
+- Initial build for 4.3
+
+* Mon Aug 21 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 1.0.999-0
+- Development for 4.3
+
+* Mon Mar 06 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 0.9.999-0
+- Development for 4.2
+
+* Mon Mar 06 2017 Sandro Bonazzola <sbonazzo@redhat.com> - 0.9.16-0
+- Added systemd unit for running vdsm-tool configure
+- Resolves: BZ#1429288
+
+* Fri Mar 03 2017 Ryan Barry <rbarry@redhat.com> - 0.9.15-0
+- Add unmount to imgbased.utils
+
+* Thu Feb 23 2017 Ryan Barry <rbarry@redhat.com> - 0.9.14-0
+- Rescan all LVs on update
+
+* Wed Feb 22 2017 Ryan Barry <rbarry@redhat.com> - 0.9.12-0
+- Fix an error with imgbase --init
+
+* Mon Feb 20 2017 Ryan Barry <rbarry@redhat.com> - 0.9.11-0
+- Fix some logic problems in imgbased's handling of bases
+
+* Mon Feb 20 2017 Douglas Schilling Landgraf <dougsland@redhat.com> - 0.9.10-0
+- Keep unmodified configuration files
+- Switch to a NIST partition layout on upgrades
+
+* Thu Feb 02 2017 Douglas Schilling Landgraf <dougsland@redhat.com> - 0.9.7-0
+- split the imgbase in two packages for python3 support
+
+* Fri Jan 20 2017 Ryan Barry <rbarry@redhat.com> - 0.9.6-1
+- Copy kernel FIPS signatures into /boot
+
+* Wed Jan 18 2017 Ryan Barry <rbarry@redhat.com> - 0.9.5-1
+- Revert selinux relabeling on upgrades
+
+* Wed Jan 04 2017 Ryan Barry <rbarry@redhat.com> - 0.9.4-1
+- Also keep depinstalled and depupdated for persistence
+
+* Wed Jan 04 2017 Ryan Barry <rbarry@redhat.com> - 0.9.3-1
+- Ensure new layers have enough space for hosted engine
+- Copy the kernel and initrd to /boot so grub2-mkconfig and virt-v2v work
+
+* Wed Jan 04 2017 Ryan Barry <rbarry@redhat.com> - 0.9.2-1
+- Use GB instead of GiB in osupdater /boot validation
+
+* Tue Jan 03 2017 Ryan Barry <rbarry@redhat.com> - 0.9.1-1
+- Fix a typo in utils.SystemRelease which blocks installs
+
+* Tue Dec 20 2016 Ryan Barry <rbarry@redhat.com> - 0.9.0-1
+- Add a yum plugin to persist RPMs through upgrades
+- Remove existing yum/dnf plugins
+
+* Mon Nov 14 2016 Ryan Barry <rbarry@redhat.com> - 0.8.10-1
+- Enable IQN randomization
+
+* Fri Nov 11 2016 Ryan Barry <rbarry@redhat.com> - 0.8.9-1
+- Also relocate on updates
+
+* Thu Nov 10 2016 Ryan Barry <rbarry@redhat.com> - 0.8.8-1
+- Relocate /var/lib/yum to /usr
+
+* Fri Nov 4 2016 Ryan Barry <rbarry@redhat.com> - 0.8.7-1
+- Fix a regression with the last patch in interactive installs
+
+* Wed Oct 19 2016 Ryan Barry <rbarry@redhat.com> - 0.8.6-1
+- Ensure disabled services stay disabled after upgrade
+
+* Thu Sep 15 2016 Ryan Barry <rbarry@fedoraproject.org> - 0.8.5-1
+- Remove non-imgbased entries at boot
+
+* Wed Apr 02 2014 Fabian Deutsch <fabiand@fedoraproject.org> - 0.1-0.1
+- Initial package

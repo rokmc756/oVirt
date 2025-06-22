@@ -1,0 +1,223 @@
+# Copyright 2016-2021 Red Hat, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+#
+# Refer to the README and COPYING files for full details of the license
+
+%define        __spec_install_post %{nil}
+%define          debug_package %{nil}
+%define        __os_install_post %{_dbpath}/brp-compress
+
+Name:           ovirt-provider-ovn
+Version:        1.2.36
+Release:        1%{?dist}
+Summary:        The oVirt external network provider for OVN
+License:        GPLv2+
+BuildArch:      noarch
+URL:            https://gerrit.ovirt.org/#/admin/projects/ovirt-provider-ovn
+Source0:        %{name}-%{version}.tar.gz
+
+Requires: firewalld-filesystem
+Requires: kernel >= 3.10.0-512
+
+Requires: ovirt-openvswitch >= 2.15
+Requires: ovirt-openvswitch-ovn-central >= 2.15
+Requires: ovirt-openvswitch-ovn-common >= 2.15
+Requires: ovirt-python-openvswitch >= 2.15
+
+Requires: python3-requests
+Requires: python3-netaddr
+Requires: python3-ovsdbapp >= 0.17.5
+Requires: python3-six
+
+BuildRequires: python3
+BuildRequires: python3-devel
+BuildRequires: python3-setuptools
+BuildRequires: systemd
+
+%prep
+%setup -q
+
+%build
+
+%install
+rm -rf $RPM_BUILD_ROOT
+%make_install PYTHON="%{__python3}"
+
+
+%description
+The oVirt external network provider for OVN allows to integrate oVirt with the
+Open vSwitch Open Virtual Network (OVN) solution. OVN is a Software Defined
+Networking extension to Open vSwitch. OVN is integrated into oVirt using the
+external network API. The oVirt provider for OVN serves as a proxy between
+oVirt engine and OVN Northbound DB.
+
+%post
+%systemd_post ovirt-provider-ovn.service
+
+
+%preun
+%systemd_preun ovirt-provider-ovn.service
+
+
+%postun
+%systemd_postun_with_restart ovirt-provider-ovn.service
+
+
+%package driver
+Summary: The virtual interface driver for oVirt external network provider for OVN
+License: GPLv2+
+BuildArch: noarch
+Requires: firewalld-filesystem
+Requires: kernel >= 3.10.0-512
+
+Requires: ovirt-openvswitch >= 2.15
+Requires: ovirt-openvswitch-ovn-host >= 2.15
+Requires: ovirt-openvswitch-ovn-common >= 2.15
+Requires: ovirt-python-openvswitch >= 2.15
+Requires: ovirt-openvswitch-ipsec >= 2.15
+
+Requires: vdsm
+Requires(post): firewalld-filesystem
+
+BuildRequires: python3
+BuildRequires: python3-devel
+BuildRequires: python3-setuptools
+BuildRequires: systemd
+
+%description driver
+The virtual interface driver for oVirt external network provider for OVN.
+The driver handles the connection of virtual NICs provisioned on oVirt hosts
+to OVN.
+
+
+%files
+%config(noreplace) %{_sysconfdir}/logrotate.d/ovirt-provider-ovn
+%config(noreplace) %{_sysconfdir}/ovirt-provider-ovn/logger.conf
+%{_sysconfdir}/ovirt-provider-ovn/ovirt-provider-ovn.conf
+%{_sysconfdir}/ovirt-provider-ovn/conf.d/
+%{_datadir}/ovirt-provider-ovn
+%{_unitdir}/ovirt-provider-ovn.service
+/usr/lib/firewalld/services/ovirt-provider-ovn.xml
+%doc /usr/share/doc/ovirt-provider-ovn/README.adoc
+%license LICENSE
+
+%files driver
+%{_libexecdir}/vdsm/hooks/before_nic_hotplug/
+%{_libexecdir}/vdsm/hooks/before_device_create/
+%{_libexecdir}/vdsm/hooks/after_get_caps/
+%{_libexecdir}/ovirt-provider-ovn
+%{python3_sitelib}/vdsm/tool/
+%attr(440, root, root) %{_sysconfdir}/sudoers.d/50_vdsm_hook_ovirt_provider_ovn_hook
+%license LICENSE
+
+
+%changelog
+* Mon Mar 14 2022 Eitan Raviv <eraviv@redhat.com> - 1.2.36
+- Replace netaddr with std ipaddress
+- Add support for "extensions" REST API endpoint
+
+* Mon Jan 17 2022 Ales Musil <amusil@redhat.com> - 1.2.35
+- Use SSL keys that are made specifically for OVN
+- Require ovirt-openvswitch wrapper instead of plain openvswitch
+- Configure IPsec with driver
+- Fix some IPv6 router related issues
+
+* Fri Jul 30 2021 Ales Musil <amusil@redhat.com> - 1.2.34
+- Bump required ovsdbapp version to 0.17.5 or higher
+- Use global connection for ovn north db
+- Remove py2 and fc30 builds
+
+* Fri Nov 20 2020 Dominik Holler <dholler@redhat.com> - 1.2.33
+- provider: Fix localnet update
+- spec: Fix sudoers drop-in config permissions - bz#1895015
+- provider: Fix ipv6_address_mode
+
+* Mon Sep 28 2020 Dominik Holler <dholler@redhat.com> - 1.2.32
+- configure for scaling scenarios - bz#1871819
+
+* Tue Aug 25 2020 Dominik Holler <dholler@redhat.com> - 1.2.31
+- improve scaling of port listing - bz#1835550
+
+* Tue Mar 24 2020 Dominik Holler <dholler@redhat.com> - 1.2.30
+- ovirt-provider-ovn.conf is no config file - bz#1701121
+- clear the port dhcp_options in tx scope - bz#1795236
+
+* Mon Dec 16 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.29
+- hardening against cross-site scripting vulnerabilities - bz#1757077
+
+* Mon Nov 25 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.28
+- el8 and fc30 builds added
+
+* Wed Oct 09 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.27
+- fix security groups remote group id for groups other than default
+- fix ovirt-provider-ovn str-byte fix on json dump
+- add plugin_type check to vhostuser_hook
+
+* Thu Aug 22 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.26
+- fix security groups issues on groups other than default - bz#1744235
+
+* Wed Jul 24 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.25
+- update BuildRequires section with python-devel packages
+
+* Wed Jul 10 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.24
+- allow correct deployment of ovirt node on fedora29 hosts
+
+* Wed Jun 26 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.23
+- create/update/remove logical ports within a single transaction object
+- create/update/remove security groups within a single transaction object
+- create/remove security group rules within a single transaction object
+- package the ovirt-provider-ovn-driver for python3 - on fedora / el8
+- logical routers can now be disabled - bz#1723800
+
+* Thu May 09 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.22
+- fix error handling on python3
+- fix error where ipv6 subnets could not be removed from routers
+- implement default keystone route
+
+* Thu Apr 11 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.21
+- stateless dhcpv6 on ipv6 subnets
+- package the provider for python3 - on fedora / el8
+- fix IPv6 subnet gateway
+- bail out of driver after_get_caps hooks when ovs is not available
+
+* Mon Feb 18 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.20
+- fix dhcpv6 options
+- default security group rule ethertype to IPv4
+
+* Tue Jan 22 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.19
+- subnet ipv6 support
+- fix disabling port security on logical ports
+
+* Mon Jan 14 2019 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.18
+- configurable TLS ciphers
+- comply with networking API on network updates
+- comply with networking API on port creation
+
+* Thu Nov 15 2018 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.17
+- comply with the networking api for security group rule GET requests
+- implement the remote group prefix parameter for security groups
+- implement the acls in the correct OVS pipeline stage
+- support unicode characters on security group names
+- support unicode characters on network names
+
+* Wed Oct 03 2018 Miguel Duarte Barroso <mdbarroso@redhat.com> - 1.2.16
+- add security group support on the provider
+
+* Mon Mar 13 2017 Dominik Holler <dholler@redhat.com> - 1.1
+- add dependecy python-requests
+
+* Fri Aug  26 2016 Marcin Mirecki
+-

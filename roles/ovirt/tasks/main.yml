@@ -35,6 +35,11 @@
   when: ( engine is defined and engine == true )
 
 
+- name: Import oVirt Template Playbook
+  import_tasks: template/main.yml
+  when: ( template is defined and template == true )
+
+
 - name: Setup NTP Service
   import_tasks: ext/setup-chrony.yml
   tags: setup, install
@@ -44,13 +49,13 @@
 - name: Setup oVirt Engine Python SDK
   import_tasks: ext/install-ovirt-sdk.yml
   tags: setup, install
-  when: ( sdk is defined and sdk == true ) and inventory_hostname in groups['engine']
+  when: ( sdk is defined and sdk == true ) and inventory_hostname not in groups['nfs']
 
 
 - name: Remove oVirt Engine Python SDK
   import_tasks: ext/uninstall-ovirt-sdk.yml
   tags: remove, uninstall
-  when: ( sdk is defined and sdk == true ) and inventory_hostname in groups['engine']
+  when: ( sdk is defined and sdk == true ) and inventory_hostname not in groups['nfs']
 
 
 - name: Setup DNS Zone and Record
@@ -63,4 +68,17 @@
   import_tasks: dns/remove-freeipa.yml
   tags: remove, delete, uninstall
   when: ( dns is defined and dns == true ) and inventory_hostname in groups['dns']
+
+
+- name: Add oVirt Users
+  import_tasks: ext/add-users.yml
+  tags: add, install
+  when: ( user is defined and user == true ) and inventory_hostname in groups['engine']
+
+
+- name: Remove oVirt Users
+  import_tasks: ext/remove-users.yml
+  tags: remove, install
+  when: ( user is defined and user == true ) and inventory_hostname in groups['engine']
+
 

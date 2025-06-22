@@ -6,6 +6,13 @@
 - debug: msg={{ uninstall_python_sdk }}
 
 
+- name: Uninstall Wheel
+  shell: |
+    pip3 uninstall wheel -y
+  register: uninstall_wheel
+- debug: msg={{ uninstall_wheel }}
+
+
 - name: Uninstall Packages for Ovirt Engine Python SDK
   package:
     name: "{{ item }}"
@@ -15,4 +22,5 @@
     - python3-pip
     - libxml2-devel
 - debug: msg={{ uninstall_pkgs }}
+
 

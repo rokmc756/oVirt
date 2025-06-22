@@ -1,0 +1,1226 @@
+# SPDX-FileCopyrightText: Red Hat, Inc.
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Packages names
+%global vdsm_name vdsm
+
+# Required users and groups
+%global vdsm_user vdsm
+%global vdsm_group kvm
+%{!?qemu_user: %global qemu_user qemu}
+%{!?qemu_group: %global qemu_group qemu}
+%global snlk_group sanlock
+%global snlk_user sanlock
+%global cdrom_group cdrom
+%global imageio_user ovirtimg
+%global imageio_group ovirtimg
+
+# Features
+%{!?with_ovirt_vmconsole: %global with_ovirt_vmconsole 1}
+%{!?with_gluster_mgmt: %global with_gluster_mgmt 1}
+%{!?with_hooks: %global with_hooks 1}
+%{!?with_vhostmd: %global with_vhostmd 1}
+
+
+%{!?vdsm_repo: %global vdsm_repo /rhev/data-center}
+
+%global gluster_version 6.0
+
+# Default to skipping autoreconf.  Distros can change just this one line
+# (or provide a command-line override) if they backport any patches that
+# touch configure.ac or Makefile.am.
+%{!?enable_autotools:%global enable_autotools 0}
+
+# Required paths
+%if 0%{?fedora}
+%global _polkitdir %{_datadir}/polkit-1/rules.d
+%else
+%global _polkitdir %{_localstatedir}/lib/polkit-1/localauthority/10-vendor.d
+%endif
+%global _vdsm_log_dir %{_localstatedir}/log/%{vdsm_name}
+
+# Disable debuginfo package, since vdsm is a meta-package
+%global debug_package %{nil}
+
+# RPM packaging guidelines require all files outside of '/usr/lib[64]/pythonX.X'
+# to be compiled manually [1]. Some distros try to find '*.py' files outside of the aforementioned
+# dirs and compile them for us, but using hard-coded '__python' macro, which points to Python 2.
+# We opt-out of this behavior and do the compilation ourselves in 'install' stage.
+#
+# [1] https://docs.fedoraproject.org/en-US/packaging-guidelines/Python_Appendix/#manual-bytecompilation
+%global _python_bytecompile_extra 0
+
+# Release must be generated dynamically and that can't be done here.
+# It must be either:
+# - filled in by configure
+# - generated using ./build-aux/make-dist script
+# - passed to rpmbuild as
+#   --define="vdsm_release $(./build-aux/pkg-version --release)"
+%{!?vdsm_release: %global vdsm_release 1}
+
+Name:           %{vdsm_name}
+Version:        4.50.5.1
+Release:        %{vdsm_release}%{?dist}%{?extra_release}
+Summary:        Virtual Desktop Server Manager
+
+Group:          Applications/System
+License:        GPL-2.0-or-later
+Url:            http://www.ovirt.org/develop/developer-guide/vdsm/vdsm/
+Source0:        https://github.com/oVirt/vdsm/releases/download/v%{version}/%{vdsm_name}-%{version}.tar.gz
+
+%{!?_licensedir:%global license %%doc}
+
+%if 0%{?rhel} >= 9
+# qemu-kvm is not available for ppc64le on RHEL 9
+ExcludeArch:   ppc64le
+%endif
+
+BuildRequires: openssl
+BuildRequires: python3
+BuildRequires: python3-six >= 1.9.0
+BuildRequires: python3-dateutil
+BuildRequires: python3-devel
+BuildRequires: rpm-build
+BuildRequires: systemd-units
+
+# Autotools BuildRequires
+%if 0%{?enable_autotools}
+BuildRequires: autoconf
+BuildRequires: automake
+BuildRequires: util-linux
+%endif
+
+%if 0%{?rhel} >= 8
+# we don't want BRP to change all our shebangs to platform-python
+%undefine __brp_mangle_shebangs
+%endif
+
+# Numactl is not available on s390[x] and ARM
+%ifnarch s390 s390x %{arm}
+Requires: numactl
+%endif
+
+%ifarch x86_64
+Requires: python3-dmidecode
+Requires: dmidecode
+Requires: virt-v2v
+%endif
+
+Requires: chrony
+Requires: crontabs
+Requires: which
+Requires: sudo >= 1.7.3
+Requires: logrotate
+Requires: lshw
+Requires: lsof
+Requires: ndctl
+Requires: swtpm-tools
+Requires: xz
+Requires: python3-rpm
+Requires: python3-six >= 1.9.0
+Requires: python3-requests
+Requires: curl
+Requires: %{name}-http = %{version}-%{release}
+Requires: %{name}-jsonrpc = %{version}-%{release}
+%if 0%{?rhel} >= 8
+Requires: safelease >= 1.0.1-1.el8ev
+%else
+Requires: safelease >= 1.0-7
+%endif
+Requires: mom >= 0.5.14
+Requires: util-linux
+Requires(pre): shadow-utils
+
+Obsoletes: %{name}-infra < 4.19
+
+Requires: nfs-utils
+
+# For kvm2ovirt
+Requires: ovirt-imageio-common
+# For controlling /tickets
+# 2.2.0-1 for https://bugzilla.redhat.com/1971182
+Requires: ovirt-imageio-daemon >= 2.2.0-1
+
+%if %{with_ovirt_vmconsole}
+Requires: ovirt-vmconsole >= 1.0.0-0
+%endif
+
+Requires: python3 >= 3.6
+
+Requires: libvirt-client
+Requires: libvirt-daemon-config-nwfilter
+Requires: libvirt-lock-sanlock
+# Zero-copy migrations, https://bugzilla.redhat.com/2089434
+Requires: libvirt-daemon-kvm >= 8.0.0-5.4.module+el8.6.0+16370+bb85faee
+%if 0%{?centos} == 8
+Requires: python3-libvirt
+%else
+# VIR_MIGRATE_ZEROCOPY flag, https://bugzilla.redhat.com/2089434
+Requires: python3-libvirt >= 8.0.0-1.1.module+el8.6.0+16381+3abc475c
+%endif
+
+# iscsi-intiator versions
+Requires: iscsi-initiator-utils >= 6.2.0.873-21
+
+%if 0%{?rhel}
+# For https://bugzilla.redhat.com/1961752
+Requires: python3-sanlock >= 3.8.3-3
+Requires: sanlock >= 3.8.3-3
+%endif
+
+Requires: device-mapper-multipath
+
+# augeas
+
+%if 0%{?rhel}
+Requires: python3-augeas
+%endif
+
+# fence-agents
+
+%if 0%{?centos}
+# TODO: Require 4.2.1-53+ when CentOS 8.3 is released
+Requires: fence-agents-all
+%else
+# fence-agents package without telnet dependency
+Requires: fence-agents-all >= 4.2.1-53
+%endif
+
+%if 0%{?fedora}
+Requires: python3-augeas
+%endif
+
+Requires: python3-policycoreutils
+Requires: systemd >= 219-11
+Requires: initscripts >= 9.49.31
+Requires: cyrus-sasl-scram
+%if 0%{?fedora}
+# Required for solving bug 1575762
+Requires: lvm2 >= 2.02.177-5
+%else
+# EL 8.1 baseline.
+Requires: lvm2 >= 8:2.03
+%endif
+
+# EL 8.4 baseline
+Requires: kernel >= 4.18.0-305
+
+Requires: e2fsprogs
+Requires: selinux-policy-targeted
+
+%if 0%{?fedora}
+Requires: ed
+Requires: sed
+Requires: policycoreutils
+Requires: python3-policycoreutils
+%endif
+
+# qemu-kvm
+
+# Zero-copy migrations, https://bugzilla.redhat.com/2089434
+Requires: qemu-kvm >= 15:6.2.0-11.module+el8.6.0+16360+9e5d914e.4
+
+# GlusterFS client-side RPMs needed for Gluster SD
+%ifnarch ppc64le
+Requires: glusterfs-cli >= %{gluster_version}
+Requires: glusterfs-fuse >= %{gluster_version}
+%endif
+
+Requires: psmisc >= 22.6-15
+
+# Make sure we require sos version which includes VDSM plugin
+%if 0%{?centos} || 0%{?fedora}
+# Currently we are without sos VDSM plugin on CentOS/Fedora:
+#  - CentOS: When 7.7 is released, we also need to require 3.7-3+
+#  - Fedora: When sos 3.7.1/3.8 is relased, we need to require it
+Requires: sos
+%else
+# RHEL
+%if 0%{?rhel} >= 8
+Requires: sos >= 3.7-1
+%else
+Requires: sos >= 3.7-3
+%endif
+%endif
+
+Requires: tree
+Requires: dosfstools
+%if 0%{?rhel} >= 9
+# xorriso replaced genisoimage on RHEL 9
+Requires: xorriso
+%else
+Requires: genisoimage
+%endif
+Requires: python3-libselinux
+Requires: %{name}-python = %{version}-%{release}
+Requires: libguestfs-tools-c
+
+Requires(post): /usr/sbin/saslpasswd2
+
+%if 0%{?fedora} || 0%{?rhel} >= 8
+Requires(post): hostname
+%else
+# RHEL/CentOS 7
+Requires(post): /bin/hostname
+%endif
+
+# SecureBoot & q35, supported by x86_64 and aarch64; no ppc64le support at
+# the moment.
+%ifarch x86_64 %{arm}
+%if 0%{?rhel}
+Requires: OVMF
+%else
+# fedora
+Requires: edk2-ovmf
+%endif
+%endif
+
+Conflicts: ovirt-hosted-engine-ha < 2.3.6
+
+Conflicts: vdsm-hook-sriov
+Obsoletes: vdsm-hook-vfio-mdev < %{version}-%{release}
+Provides: vdsm-hook-vfio-mdev
+Obsoletes: %{name}-hook-floppy < %{version}-%{release}
+Obsoletes: %{name}-hook-numa < %{version}-%{release}
+Obsoletes: %{name}-hook-pincpu < %{version}-%{release}
+Obsoletes: %{name}-hook-vmdisk < %{version}-%{release}
+Obsoletes: %{name}-hook-hostdev-scsi < %{version}-%{release}
+Obsoletes: %{name}-hook-vmfex-dev < 4.40.70
+
+
+%description
+The VDSM service is required by a Virtualization Manager to manage the
+Linux hosts. VDSM manages and monitors the host's storage, memory and
+networks as well as virtual machine creation, other host administration
+tasks, statistics gathering, and log collection.
+
+%package http
+Summary:        VDSM http API
+BuildArch:      noarch
+Provides: %{name}-xmlrpc = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
+Obsoletes: %{name}-xmlrpc < %{version}-%{release}
+
+%description http
+A http interface for interacting with vdsmd when using OVF store image
+download or upload.
+
+%package client
+Summary:        VDSM client
+BuildArch:      noarch
+# A hack for unbreaking external packages that expect vdsm-cli.
+Provides: %{name}-cli = %{version}-%{release}
+Requires: %{name}-api = %{version}-%{release}
+Requires: %{name}-yajsonrpc = %{version}-%{release}
+Requires: %{name}-python = %{version}-%{release}
+Obsoletes: %{name}-cli < %{version}-%{release}
+
+%description client
+Access vdsm API from the command line.
+
+%package api
+Summary:        VDSM API
+BuildArch:      noarch
+BuildRequires:  python3-pyyaml
+
+%description api
+Contains api schema files
+
+%package jsonrpc
+Summary:        VDSM API Server
+BuildArch:      noarch
+Requires:       %{name}-python = %{version}-%{release}
+Requires:       %{name}-api = %{version}-%{release}
+Requires:       %{name}-yajsonrpc = %{version}-%{release}
+Obsoletes:      %{name}-api < 4.16
+
+%description jsonrpc
+A Json-based RPC interface that serves as the protocol for libvdsm.
+
+%package yajsonrpc
+Summary:        JSON RPC server and client implementation
+BuildArch:      noarch
+Requires:       python3 >= 3.6
+
+%description yajsonrpc
+A JSON RPC server and client implementation.
+
+%package common
+Summary:        common VDSM python libraries, required by all subsystems
+BuildArch:      noarch
+Requires:       systemd
+Requires:       glibc
+Requires:       python3-dbus
+Requires:       python3-dateutil
+Requires:       python3-six >= 1.9.0
+%if 0%{?rhel}
+Requires:       python3-decorator
+%endif
+%if 0%{?fedora}
+Requires:       python3-decorator
+%endif
+
+%description common
+VDSM libraries that are imported by all subsystems
+
+%package network
+Summary:        VDSM network python libraries
+Requires:       NetworkManager-config-server
+Requires:       NetworkManager-ovs
+Requires:       ethtool
+Requires:       iproute
+Requires:       iproute-tc
+%if 0%{?rhel} >= 9
+Requires:       ovirt-openvswitch >= 2.17
+# Workaround for BZ#1966143
+Requires:       ovirt-python-openvswitch >= 2.17
+%else
+Requires:       ovirt-openvswitch >= 2.15
+# Workaround for BZ#1966143
+Requires:       ovirt-python-openvswitch >= 2.15
+%endif
+Requires:       nmstate >= 1.2.1-3
+%if 0%{?rhel} < 9
+Requires:       nmstate-plugin-ovsdb
+%endif
+Requires:       python3-libnmstate
+Requires:       libnl3
+Requires:       lldpad
+Requires:       python3-six
+Requires:       python3-cryptography
+Requires:       %{name}-common = %{version}-%{release}
+
+%description network
+VDSM network python libraries
+
+%package python
+Summary:        VDSM python libraries
+Requires:       %{name}-api = %{version}-%{release}
+BuildArch:      noarch
+# Fix compatibility with gluster shard, https://bugzilla.redhat.com/1820283
+Requires:       python3-ioprocess >= 1.4.1
+Requires:       %{name}-common = %{version}-%{release}
+Requires:       %{name}-network = %{version}-%{release}
+
+%description python
+Shared libraries between the various VDSM packages.
+
+%package hook-allocate_net
+Summary:        random_network allocation hook for VDSM
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-allocate_net
+VDSM hook used to allocate networks for vms in a random fashion
+
+%package hook-boot_hostdev
+Summary:        allows setting boot order for hostdev
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-boot_hostdev
+VDSM hook used to boot vms from passthrough devices via custom property
+
+%package hook-checkimages
+Summary:        Qcow2 disk image format check hook for VDSM
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-checkimages
+VDSM hook used to perform consistency check on a qcow2 format disk image
+using the QEMU disk image utility.
+
+%package hook-checkips
+Summary:        Check connectivity from the host to designated IPs
+Requires:       %{name}
+
+%description hook-checkips
+VDSM hook used to check connectivity from the host network to designated IPs
+
+%post hook-checkips
+%systemd_post vdsm-checkips.service
+
+%preun hook-checkips
+%systemd_preun vdsm-checkips.service
+
+%package hook-diskunmap
+Summary:        Activate UNMAP for disk/lun devices
+BuildArch:      noarch
+Requires:       qemu-kvm >= 1.5
+
+%description hook-diskunmap
+VDSM hooks which allow to activate disk UNMAP.
+
+%package hook-ethtool-options
+Summary:        Allow setting custom ethtool options for vdsm controlled nics
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-ethtool-options
+VDSM hook used for applying custom network properties that define ethtool
+options for vdsm network nics
+
+%package hook-extra-ipv4-addrs
+Summary:        Set extra ipv4 addresses for vdsm networks.
+
+%description hook-extra-ipv4-addrs
+This hook allows the user to set extra ipv4
+addresses for vdsm networks.
+
+%if %{with_vhostmd}
+%package hook-vhostmd
+Summary:        VDSM hook set for interaction with vhostmd
+BuildArch:      noarch
+Requires:       vhostmd
+
+%description hook-vhostmd
+VDSM hook to use vhostmd per VM according to Virtualization Manager requests.
+%endif
+
+%package hook-faqemu
+Summary:        Fake qemu process for VDSM quality assurance
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-faqemu
+VDSM hook used for testing VDSM with multiple fake virtual machines without
+running real guests.
+To enable this hook on your host, set vars.fake_kvm_support=True in your
+/etc/vdsm/vdsm.conf before adding the host to ovirt-Engine.
+
+%package hook-localdisk
+Summary:        Use a local image instead of a shared storage image
+BuildArch:      noarch
+Requires:       %{name} == %{version}
+
+%description hook-localdisk
+This hook adds the ability to use fast local storage instead of shared
+storage, while using shared storage for managing VM templates.
+To enable this hook, the VM should have a custom property of 'localdisk=lvm'.
+The system administrator will be responsible for creating the host "ovirt-local"
+volume group and extending it with new devices if needed.
+The VM must be pinned to the host.
+
+%package hook-log-console
+Summary:        Log VM's serial console to a file
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-log-console
+This hook allows logging a VM serial console to a file.
+
+%package hook-log-firmware
+Summary:        Log VM's firmware to a file
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-log-firmware
+This hook allows logging a VM firmware to a file.
+
+%package hook-macbind
+Summary:        Bind a vNIC to a Bridge
+BuildArch:      noarch
+Requires:       %{name} >= 4.14
+
+%description hook-macbind
+VDSM hooks which allow to bind a vNIC to a Bridge, managed or not by engine.
+
+%package hook-extnet
+Summary:        Force a vNIC to connect to a specific libvirt network
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-extnet
+VDSM hook which allows to connect a vNIC to a libvirt network that is managed
+outside of oVirt, such as an openvswitch network.
+
+%package hook-fakevmstats
+Summary:        Generate random VM statistics
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-fakevmstats
+Hook intercepts VM's stats and randomizes various fields.
+To enable this hook on your host, set vars.fake_vmstats_enable=true in your
+/etc/vdsm/vdsm.conf.
+
+%package hook-fileinject
+Summary:        Allow uploading file to VMs disk
+BuildArch:      noarch
+Requires:       python3-libguestfs
+
+%description hook-fileinject
+Hook is getting target file name and its content and
+create that file in target machine.
+
+%package hook-httpsisoboot
+Summary:        Allow directly booting from an https available ISO
+BuildArch:      noarch
+
+%description hook-httpsisoboot
+Let the VM boot from an ISO image made available via an https URL without
+the need to import the ISO into an ISO storage domain.
+It doesn't support plain http.
+
+%package hook-nestedvt
+Summary:        Nested Virtualization support for VDSM
+BuildArch:      noarch
+
+%description hook-nestedvt
+If the nested virtualization is enabled in your kvm module
+this hook will expose it to the guests.
+
+%package hook-openstacknet
+Summary:        OpenStack Network vNICs support for VDSM
+BuildArch:      noarch
+
+%description hook-openstacknet
+Hook for OpenStack Network vNICs.
+
+%package hook-qemucmdline
+Summary:        QEMU cmdline hook for VDSM
+BuildArch:      noarch
+Requires:       %{name}
+
+%description hook-qemucmdline
+Provides support for injecting QEMU cmdline via VDSM hook.
+It exploits libvirt's qemu:commandline facility available in the
+qemu xml namespace.
+
+%package hook-scratchpad
+Summary:        One time disk creation for VDSM
+BuildArch:      noarch
+
+%description hook-scratchpad
+scratchpad hook for VDSM
+Hook creates a disk for a VM onetime usage,
+the disk will be erased when the VM destroyed.
+VM cannot be migrated when using scratchpad hook
+
+%package hook-smbios
+Summary:        Adding custom smbios entries to libvirt domain via VDSM
+BuildArch:      noarch
+
+%description hook-smbios
+Adding custom smbios entries to libvirt domain via VDSM
+such as: vendor, version, date and release
+
+%package hook-spiceoptions
+Summary:        To configure spice options for vm
+BuildArch:      noarch
+
+%description hook-spiceoptions
+This vdsm hook can be used to configure some of
+the spice optimization attributes and values..
+
+%package hook-vmfex-dev
+Summary:        VM-FEX vNIC support for VDSM
+BuildArch:      noarch
+Requires:       %{name}
+Conflicts:      hook-vmfex
+
+%description hook-vmfex-dev
+Allows to use custom device properties to connect a guest vNIC to a host
+VM-FEX Virtual Function (SR-IOV with macvtap mode).
+
+%package hook-fcoe
+Summary:        Hook to enable FCoE support
+BuildArch:      noarch
+Requires:       %{name}
+Requires:       fcoe-utils
+
+%description hook-fcoe
+VDSM hook used for configure specified NICs as FCoE interface through custom
+network properties
+
+%post hook-fcoe
+%systemd_post lldpad.service
+%systemd_post fcoe.service
+
+%package hook-cpuflags
+Summary:        Hook that modifies guest's CPU flags
+BuildArch:      noarch
+
+%description hook-cpuflags
+Hook that modifies guest's CPU flags using custom properties.
+
+%package hook-hostdev-scsi
+Summary:        Hook to optimize hostdev SCSI devices translating their config.
+BuildArch:      noarch
+
+%description hook-hostdev-scsi
+Hook to optimizet hostdev SCSI generic devices translating their configuration
+into more specific one.
+
+%if %{with_gluster_mgmt}
+%package gluster
+Summary:        Gluster Plugin for VDSM
+Requires: %{name} = %{version}-%{release}
+Requires: glusterfs-server >= %{gluster_version}
+Requires: glusterfs-api >= %{gluster_version}
+Requires: glusterfs-geo-replication >= %{gluster_version}
+Requires: glusterfs-events >= %{gluster_version}
+Requires: python3-magic
+Requires: python3-pyyaml
+Requires: python3-blivet
+Requires: libblockdev-plugins-all
+Requires: xfsprogs
+%ifarch x86_64
+Requires: vdo
+Requires: kmod-kvdo
+%endif
+
+
+%description gluster
+Gluster plugin enables VDSM to serve Gluster functionalities.
+%endif
+
+%prep
+%setup -q
+
+%build
+%if 0%{?enable_autotools}
+autoreconf -if
+%endif
+
+%if %{with_ovirt_vmconsole}
+%define enable_ovirt_vmconsole yes
+%else
+%define enable_ovirt_vmconsole no
+%endif
+%if %{with_gluster_mgmt}
+%define enable_gluster_mgmt yes
+%else
+%define enable_gluster_mgmt no
+%endif
+%if %{with_hooks}
+%define enable_hooks yes
+%else
+%define enable_hooks no
+%endif
+%if %{with_vhostmd}
+%define enable_vhostmd yes
+%else
+%define enable_vhostmd no
+%endif
+%configure --with-qemu-user=%{qemu_user} --with-qemu-group=%{qemu_group} --enable-ovirt-vmconsole=%{enable_ovirt_vmconsole} --enable-gluster-mgmt=%{enable_gluster_mgmt} --enable-hooks=%{enable_hooks} --enable-vhostmd=%{enable_vhostmd} --with-data-center=%{vdsm_repo}
+make
+
+%install
+make DESTDIR=%{buildroot} install
+
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/sitecustomize.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_device_create/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_device_migrate_destination/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_get_caps/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_get_stats/checkips_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_nic_hotplug/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/after_vm_start/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/openstacknet_utils.py
+%py_byte_compile python3 %{buildroot}/%{_libexecdir}/%{vdsm_name}/vm_libvirt_hook.py
+
+%pre
+# Force standard locale behavior (English)
+export LC_ALL=C.UTF8
+
+/usr/bin/getent passwd %{vdsm_user} >/dev/null || \
+    /usr/sbin/useradd -r -u 36 -g %{vdsm_group} -d /var/lib/vdsm \
+        -s /sbin/nologin -c "Node Virtualization Manager" %{vdsm_user}
+/usr/sbin/usermod -a -G %{qemu_group},%{snlk_group} %{vdsm_user}
+/usr/sbin/usermod -a -G %{cdrom_group} %{qemu_user}
+# imageio has to be part of kvm group to be able to read/write nbd
+# socket and part of qemu group to be able to access images.
+/usr/sbin/usermod -a -G %{qemu_group},%{vdsm_group} %{imageio_user}
+# vdsm has to be part of imageio group to be able to read/write imageio
+# control socket.
+/usr/sbin/usermod -a -G %{imageio_group} %{vdsm_user}
+
+# We keep the previous rpm version number in a file for managing upgrade flow
+if [ "$1" -gt 1 ]; then
+    rpm -q %{vdsm_name} > "%{_localstatedir}/lib/%{vdsm_name}/upgraded_version"
+    # Both vdsm and supervdsm should be managed here and must be restarted if
+    # ran before the upgrade
+    if /bin/systemctl status vdsmd >/dev/null 2>&1; then
+        /usr/bin/touch "%{_localstatedir}/lib/%{vdsm_name}/vdsmd_start_required"
+    fi
+    if /bin/systemctl status supervdsmd >/dev/null 2>&1; then
+        /usr/bin/touch "%{_localstatedir}/lib/%{vdsm_name}/supervdsmd_start_required"
+    fi
+
+fi
+
+%post
+# After vdsm install we should create the logs files.
+# In the install session we create it but since we use
+# the ghost macro (in files session) the files are not included
+touch %{_vdsm_log_dir}/{mom.log,supervdsm.log,vdsm.log}
+chmod 0644 %{_vdsm_log_dir}/{mom.log,supervdsm.log,vdsm.log}
+chown %{vdsm_user}:%{vdsm_group} %{_vdsm_log_dir}/{mom.log,vdsm.log}
+chown root:root %{_vdsm_log_dir}/supervdsm.log
+
+systemd-tmpfiles --create %{vdsm_name}.conf
+
+# Have moved vdsm section in /etc/sysctl.conf to /etc/sysctl.d/vdsm.conf.
+# So Remove them if it is played with /etc/sysctl.conf.
+if grep -q "# VDSM section begin" /etc/sysctl.conf; then
+    /bin/sed -i '/# VDSM section begin/,/# VDSM section end/d' \
+        /etc/sysctl.conf
+fi
+
+# VDSM installs vdsm-modules-load.d.conf file - the following command will
+# refresh vdsm kernel modules requirements to start on boot
+/bin/systemctl restart systemd-modules-load.service >/dev/null 2>&1 || :
+
+# VDSM installs unit files - daemon-reload will refresh systemd
+/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+exit 0
+
+%preun
+if [ "$1" -eq 0 ]; then
+        %{_bindir}/vdsm-tool remove-config
+fi
+%systemd_preun dev-hugepages1G.mount
+%systemd_preun vdsmd.service
+%systemd_preun vdsm-network.service
+%systemd_preun supervdsmd.service
+%systemd_preun mom-vdsm.service
+%systemd_preun ksmtuned.service
+exit 0
+
+%posttrans
+if  [ -f "%{_localstatedir}/lib/%{vdsm_name}/upgraded_version" ]; then
+    # removing temporary files at first to avoid leaving upgrade leftovers
+    /bin/rm -f "%{_localstatedir}/lib/%{vdsm_name}/upgraded_version"
+    if [ -f "%{_localstatedir}/lib/%{vdsm_name}/vdsmd_start_required" ]; then
+        vdsmd_start_required='yes'
+        /bin/rm -f "%{_localstatedir}/lib/%{vdsm_name}/vdsmd_start_required"
+        /bin/systemctl stop vdsmd >/dev/null || :
+    fi
+
+    if [ -f "%{_localstatedir}/lib/%{vdsm_name}/supervdsmd_start_required" ]; then
+        supervdsmd_start_required='yes'
+        /bin/rm -f "%{_localstatedir}/lib/%{vdsm_name}/supervdsmd_start_required"
+        /bin/systemctl stop supervdsmd >/dev/null || :
+    fi
+
+    if /bin/systemctl status vdsm-network >/dev/null; then
+        /bin/systemctl stop vdsm-network >/dev/null || :
+    fi
+
+    if ! %{_bindir}/vdsm-tool is-configured >/dev/null; then
+        %{_bindir}/vdsm-tool configure --force >/dev/null
+    fi
+
+    if [ "${supervdsmd_start_required}" = 'yes' ]; then
+        /bin/systemctl start supervdsmd >/dev/null || :
+    fi
+    if [ "${vdsmd_start_required}" = 'yes' ]; then
+        /bin/systemctl start vdsmd >/dev/null || :
+    fi
+fi
+exit 0
+
+%files
+%doc README.md
+%doc lib/vdsm/vdsm.conf.sample
+%doc README.logging
+%doc ChangeLog
+%license COPYING
+%{_unitdir}/dev-hugepages1G.mount
+%{_unitdir}/vdsmd.service
+%{_unitdir}/vdsm-network.service
+%{_unitdir}/supervdsmd.service
+%{_unitdir}/mom-vdsm.service
+%{_sysconfdir}/systemd/system/libvirtd.service.d/unlimited-core.conf
+
+%dir %attr(-, %{vdsm_user}, %{vdsm_group}) %{vdsm_repo}
+%ghost %config %attr(0644, %{vdsm_user}, %{vdsm_group}) %{_vdsm_log_dir}/mom.log
+%ghost %config %attr(0644, root, root) %{_vdsm_log_dir}/supervdsm.log
+%ghost %config %attr(0644, %{vdsm_user}, %{vdsm_group}) %{_vdsm_log_dir}/vdsm.log
+%ghost %dir %attr(-, %{vdsm_user}, %{vdsm_group}) %{vdsm_repo}/hsm-tasks
+%ghost %dir %attr(-, %{vdsm_user}, %{vdsm_group}) %{vdsm_repo}/mnt
+%dir %{_libexecdir}/%{vdsm_name}
+%dir %{_sysconfdir}/%{vdsm_name}/vdsm.conf.d
+%dir %{_sysconfdir}/modprobe.d/
+%dir %{_sysconfdir}/NetworkManager
+%dir %{_sysconfdir}/NetworkManager/conf.d
+%dir %{_sysconfdir}/%{vdsm_name}
+%dir %{_sysconfdir}/%{vdsm_name}/mom.d
+%dir %{_datadir}/%{vdsm_name}
+%{_libexecdir}/%{vdsm_name}/daemonAdapter
+%{_libexecdir}/%{vdsm_name}/sitecustomize.py
+%{_libexecdir}/%{vdsm_name}/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/supervdsmd
+%{_libexecdir}/%{vdsm_name}/vdsmd
+
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/vdsm.conf
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/logger.conf
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/svdsm.logger.conf
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/mom.conf
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/mom.d/*.policy
+%config(noreplace) %{_sysconfdir}/%{vdsm_name}/logrotate/vdsm
+%config(noreplace) %{_sysconfdir}/sysctl.d/vdsm.conf
+%config(noreplace) %{_sysconfdir}/modules-load.d/vdsm.conf
+%{_sysconfdir}/ovirt-imageio/conf.d/60-vdsm.conf
+%{_tmpfilesdir}/%{vdsm_name}.conf
+%{_sysconfdir}/modprobe.d/vdsm-bonding-modprobe.conf
+%{_sysconfdir}/NetworkManager/conf.d/vdsm.conf
+%attr(440, root, root) %{_sysconfdir}/sudoers.d/50_vdsm
+%{_sysconfdir}/cron.hourly/vdsm-logrotate
+%{_sysconfdir}/libvirt/hooks/qemu
+%{_libexecdir}/%{vdsm_name}/curl-img-wrap
+%{_libexecdir}/%{vdsm_name}/fc-scan
+%{_libexecdir}/%{vdsm_name}/managedvolume-helper
+%{_libexecdir}/%{vdsm_name}/vdsm-gencerts.sh
+%{_libexecdir}/%{vdsm_name}/vdsmd_init_common.sh
+%{_libexecdir}/%{vdsm_name}/vm_libvirt_hook.py
+%{_libexecdir}/%{vdsm_name}/kvm2ovirt
+%{_libexecdir}/%{vdsm_name}/fallocate
+%{_libexecdir}/%{vdsm_name}/spmprotect.sh
+%{_libexecdir}/%{vdsm_name}/spmstop.sh
+%{_libexecdir}/%{vdsm_name}/__pycache__/*
+%dir %{_libexecdir}/%{vdsm_name}/hooks
+%dir %{_libexecdir}/%{vdsm_name}/hooks/*
+%{python3_sitelib}/dnf-plugins/*.py
+%{python3_sitelib}/dnf-plugins/__pycache__/*
+
+%{_libexecdir}/%{vdsm_name}/get-conf-item
+%{_udevrulesdir}/12-vdsm-lvm.rules
+/etc/security/limits.d/99-vdsm.conf
+%{_mandir}/man8/vdsmd.8*
+%{_polkitdir}/10-vdsm-libvirt-access.rules
+
+%defattr(-, %{vdsm_user}, %{qemu_group}, -)
+%dir %{_localstatedir}/lib/libvirt/qemu/channels
+
+%defattr(-, %{vdsm_user}, %{vdsm_group}, -)
+%dir %{_sysconfdir}/pki/%{vdsm_name}
+%dir %{_sysconfdir}/pki/%{vdsm_name}/keys
+%dir %{_sysconfdir}/pki/%{vdsm_name}/certs
+%{_sysconfdir}/pki/%{vdsm_name}/libvirt-migrate
+%dir %{_sysconfdir}/pki/%{vdsm_name}/libvirt-spice
+%config(noreplace) %{_sysconfdir}/pki/%{vdsm_name}/keys/libvirt_password
+%dir %{_localstatedir}/lib/%{vdsm_name}
+%dir %{_localstatedir}/lib/%{vdsm_name}/netconfback
+%dir %{_localstatedir}/lib/%{vdsm_name}/persistence
+%dir %{_localstatedir}/lib/%{vdsm_name}/staging
+%dir %{_localstatedir}/lib/%{vdsm_name}/storage
+%dir %{_localstatedir}/lib/%{vdsm_name}/upgrade
+%dir %{_localstatedir}/log/%{vdsm_name}
+%dir %{_localstatedir}/log/%{vdsm_name}/backup
+%dir %attr(750, %{vdsm_user}, %{vdsm_group}) %{_localstatedir}/log/%{vdsm_name}/commands
+%dir %{_localstatedir}/log/%{vdsm_name}/import
+%defattr(644, %{vdsm_user}, %{vdsm_group}, -)
+%{_datadir}/%{vdsm_name}/lvmlocal.conf
+%{_datadir}/%{vdsm_name}/autounattend/
+
+
+%files common
+%{python3_sitelib}/%{vdsm_name}/__init__.py
+%{python3_sitelib}/%{vdsm_name}/__pycache__/__init__.*.pyc
+%{python3_sitelib}/%{vdsm_name}/common
+
+%files network
+%{python3_sitelib}/%{vdsm_name}/network
+
+%files python
+%{_mandir}/man1/vdsm-tool.1*
+%{_bindir}/vdsm-tool
+%{python3_sitelib}/%{vdsm_name}/API.py
+%{python3_sitelib}/%{vdsm_name}/__pycache__/API.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/alignmentScan.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/client.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/clientIF.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/config.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/constants.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/cpuinfo.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/dmidecodeUtil.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/executor.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/health.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/hugepages.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/jobs.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/jsonrpcvdscli.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/kvm2ovirt.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/logUtils.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/machinetype.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/mkimage.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/moduleloader.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/momIF.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/numa.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/osinfo.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/ppc64HardwareInfo.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/protocoldetector.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/schedule.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/sslutils.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/supervdsm_server.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/taskset.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/throttledlog.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/utils.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/v2v.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/vdsmd.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/virtsparsify.*.pyc
+%{python3_sitelib}/%{vdsm_name}/__pycache__/virtsysprep.*.pyc
+%{python3_sitelib}/%{vdsm_name}/alignmentScan.py
+%{python3_sitelib}/%{vdsm_name}/client.py
+%{python3_sitelib}/%{vdsm_name}/clientIF.py
+%{python3_sitelib}/%{vdsm_name}/config.py
+%{python3_sitelib}/%{vdsm_name}/constants.py
+%{python3_sitelib}/%{vdsm_name}/cpuinfo.py
+%{python3_sitelib}/%{vdsm_name}/dmidecodeUtil.py
+%{python3_sitelib}/%{vdsm_name}/executor.py
+# gluster.exception is used in many places like Bridge.py. So it is required
+# even without vdsm-gluster package
+%{python3_sitelib}/%{vdsm_name}/gluster/__init__.py
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/__init__.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/cli.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/exception.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/cli.py
+%{python3_sitelib}/%{vdsm_name}/gluster/exception.py
+%{python3_sitelib}/%{vdsm_name}/health.py
+%{python3_sitelib}/%{vdsm_name}/hook/
+%{python3_sitelib}/%{vdsm_name}/host/
+%{python3_sitelib}/%{vdsm_name}/hugepages.py
+%{python3_sitelib}/%{vdsm_name}/jobs.py
+%{python3_sitelib}/%{vdsm_name}/jsonrpcvdscli.py
+%{python3_sitelib}/%{vdsm_name}/kvm2ovirt.py
+%{python3_sitelib}/%{vdsm_name}/logUtils.py
+%{python3_sitelib}/%{vdsm_name}/machinetype.py
+%{python3_sitelib}/%{vdsm_name}/metrics/
+%{python3_sitelib}/%{vdsm_name}/mkimage.py
+%{python3_sitelib}/%{vdsm_name}/moduleloader.py
+%{python3_sitelib}/%{vdsm_name}/momIF.py
+%{python3_sitelib}/%{vdsm_name}/numa.py
+%{python3_sitelib}/%{vdsm_name}/osinfo.py
+%{python3_sitelib}/%{vdsm_name}/ppc64HardwareInfo.py
+%{python3_sitelib}/%{vdsm_name}/profiling/
+%{python3_sitelib}/%{vdsm_name}/protocoldetector.py
+%{python3_sitelib}/%{vdsm_name}/schedule.py
+%{python3_sitelib}/%{vdsm_name}/sslutils.py
+%{python3_sitelib}/%{vdsm_name}/storage/
+%{python3_sitelib}/%{vdsm_name}/supervdsm_api/
+%{python3_sitelib}/%{vdsm_name}/supervdsm_server.py
+%{python3_sitelib}/%{vdsm_name}/taskset.py
+%{python3_sitelib}/%{vdsm_name}/throttledlog.py
+%{python3_sitelib}/%{vdsm_name}/tool/
+%{python3_sitelib}/%{vdsm_name}/utils.py
+%{python3_sitelib}/%{vdsm_name}/v2v.py
+%{python3_sitelib}/%{vdsm_name}/vdsmd.py
+%{python3_sitelib}/%{vdsm_name}/virt/
+%{python3_sitelib}/%{vdsm_name}/virtsparsify.py
+%{python3_sitelib}/%{vdsm_name}/virtsysprep.py
+
+%files hook-openstacknet
+%attr(440, root, root) %{_sysconfdir}/sudoers.d/50_vdsm_hook_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_create/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_create/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_create/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_migrate_destination/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_migrate_destination/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/after_device_migrate_destination/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_caps/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_caps/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_caps/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/after_nic_hotplug/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_nic_hotplug/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/after_nic_hotplug/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/after_vm_start/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/after_vm_start/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/after_vm_start/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/openstacknet_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/50_openstacknet
+%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/__pycache__/*
+%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/openstacknet_utils.py
+
+%if %{with_vhostmd}
+%files hook-vhostmd
+%license COPYING
+%attr(440, root, root) %{_sysconfdir}/sudoers.d/50_vdsm_hook_vhostmd
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_vhostmd
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_migrate_destination/50_vhostmd
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_dehibernate/50_vhostmd
+%{_libexecdir}/%{vdsm_name}/hooks/after_vm_destroy/50_vhostmd
+%else
+%exclude %{_sysconfdir}/sudoers.d/50_vdsm_hook_vhostmd
+%exclude %{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_vhostmd
+%exclude %{_libexecdir}/%{vdsm_name}/hooks/before_vm_migrate_destination/50_vhostmd
+%exclude %{_libexecdir}/%{vdsm_name}/hooks/before_vm_dehibernate/50_vhostmd
+%exclude %{_libexecdir}/%{vdsm_name}/hooks/after_vm_destroy/50_vhostmd
+%endif
+
+%files hook-qemucmdline
+%license COPYING
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_qemucmdline
+
+%files hook-ethtool-options
+%{_libexecdir}/%{vdsm_name}/hooks/after_network_setup/30_ethtool_options
+
+%files hook-fcoe
+%{_presetdir}/85-vdsm-hook-fcoe.preset
+%{_libexecdir}/%{vdsm_name}/hooks/before_network_setup/50_fcoe
+
+%files hook-localdisk
+%attr(440, root, root) %{_sysconfdir}/sudoers.d/50_vdsm_hook_localdisk
+%{_libexecdir}/%{vdsm_name}/hooks/after_disk_prepare/localdisk
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_migrate_source/localdisk
+%{_libexecdir}/%{vdsm_name}/localdisk-helper
+%{_udevrulesdir}/12-vdsm-localdisk.rules
+
+%files hook-log-console
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_log_console
+
+%files hook-log-firmware
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_log_firmware
+
+%files hook-vmfex-dev
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/50_vmfex
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_migrate_destination/50_vmfex
+%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/50_vmfex
+
+%files hook-cpuflags
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_cpuflags
+
+%if %{with_hooks}
+%files hook-allocate_net
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/10_allocate_net
+
+%files hook-boot_hostdev
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_boot_hostdev
+
+%files hook-checkimages
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/60_checkimages
+
+%files hook-checkips
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_stats/10_checkips
+%{_libexecdir}/%{vdsm_name}/hooks/checkipsd
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_stats/checkips_utils.py
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_stats/__pycache__/checkips_utils.*.pyc
+%{_unitdir}/vdsm-checkips.service
+
+%files hook-extra-ipv4-addrs
+%{_libexecdir}/%{vdsm_name}/hooks/after_network_setup/40_extra_ipv4_addrs
+
+%files hook-diskunmap
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_diskunmap
+
+%files hook-fakevmstats
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_all_vm_stats/10_fakevmstats
+
+%files hook-fileinject
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_fileinject
+
+%files hook-httpsisoboot
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_httpsisoboot
+
+%files hook-macbind
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_macbind
+
+%files hook-extnet
+%{_libexecdir}/%{vdsm_name}/hooks/before_device_create/50_extnet
+%{_libexecdir}/%{vdsm_name}/hooks/before_nic_hotplug/50_extnet
+
+%files hook-nestedvt
+%{_sysconfdir}/modprobe.d/vdsm-nestedvt.conf
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_nestedvt
+
+%files hook-scratchpad
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_scratchpad
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_migrate_source/50_scratchpad
+%{_libexecdir}/%{vdsm_name}/hooks/after_vm_destroy/50_scratchpad
+
+%files hook-smbios
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_smbios
+
+%files hook-spiceoptions
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/50_spiceoptions
+%endif
+
+%files http
+%{python3_sitelib}/%{vdsm_name}/rpc/__pycache__/http.*.pyc
+%{python3_sitelib}/%{vdsm_name}/rpc/http.py
+
+%files client
+%{_bindir}/vdsm-client
+%dir %{python3_sitelib}/vdsmclient
+%{python3_sitelib}/vdsmclient/__init__.py
+%{python3_sitelib}/vdsmclient/__pycache__/*
+%{python3_sitelib}/vdsmclient/client.py
+%{python3_sitelib}/yajsonrpc/__init__.py
+%{python3_sitelib}/yajsonrpc/__pycache__/__init__.*.pyc
+%{_mandir}/man1/vdsm-client.1*
+
+%files jsonrpc
+%{python3_sitelib}/%{vdsm_name}/rpc/Bridge.py
+%{python3_sitelib}/%{vdsm_name}/rpc/__init__.py
+%{python3_sitelib}/%{vdsm_name}/rpc/__pycache__/Bridge.*.pyc
+%{python3_sitelib}/%{vdsm_name}/rpc/__pycache__/__init__.*.pyc
+%{python3_sitelib}/%{vdsm_name}/rpc/__pycache__/bindingjsonrpc.*.pyc
+%{python3_sitelib}/%{vdsm_name}/rpc/bindingjsonrpc.py
+%{python3_sitelib}/yajsonrpc/__init__.py
+%{python3_sitelib}/yajsonrpc/__pycache__/__init__.*.pyc
+%{python3_sitelib}/yajsonrpc/__pycache__/jsonrpcclient.*.pyc
+%{python3_sitelib}/yajsonrpc/jsonrpcclient.py
+
+%files api
+%doc lib/vdsm/api/vdsm-api.html
+%dir %{python3_sitelib}/%{vdsm_name}
+%dir %{python3_sitelib}/%{vdsm_name}/api
+%dir %{python3_sitelib}/%{vdsm_name}/rpc
+%{python3_sitelib}/%{vdsm_name}/api/*.py
+%{python3_sitelib}/%{vdsm_name}/rpc/vdsm-api.pickle
+%{python3_sitelib}/%{vdsm_name}/rpc/vdsm-events.pickle
+%{python3_sitelib}/%{vdsm_name}/api/__pycache__/*
+%if ! %{with_gluster_mgmt}
+%exclude %{python3_sitelib}/%{vdsm_name}/rpc/vdsm-api-gluster.pickle
+%endif
+
+%files yajsonrpc
+%{python3_sitelib}/yajsonrpc/__pycache__/betterAsyncore.*.pyc
+%{python3_sitelib}/yajsonrpc/__pycache__/exception.*.pyc
+%{python3_sitelib}/yajsonrpc/__pycache__/stomp.*.pyc
+%{python3_sitelib}/yajsonrpc/__pycache__/stompclient.*.pyc
+%{python3_sitelib}/yajsonrpc/__pycache__/stompserver.*.pyc
+%{python3_sitelib}/yajsonrpc/betterAsyncore.py
+%{python3_sitelib}/yajsonrpc/exception.py
+%{python3_sitelib}/yajsonrpc/stomp.py
+%{python3_sitelib}/yajsonrpc/stompclient.py
+%{python3_sitelib}/yajsonrpc/stompserver.py
+
+%files hook-faqemu
+%license COPYING
+%{_libexecdir}/%{vdsm_name}/hooks/after_get_caps/10_faqemu
+%{_libexecdir}/%{vdsm_name}/hooks/before_vm_start/10_faqemu
+
+%if %{with_gluster_mgmt}
+%files gluster
+%license COPYING
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/api.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/apiwrapper.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/events.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/fence.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/fstab.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/gfapi.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/hooks.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/services.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/storagedev.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/tasks.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/__pycache__/thinstorage.*.pyc
+%{python3_sitelib}/%{vdsm_name}/gluster/api.py
+%{python3_sitelib}/%{vdsm_name}/gluster/apiwrapper.py
+%{python3_sitelib}/%{vdsm_name}/gluster/events.py
+%{python3_sitelib}/%{vdsm_name}/gluster/fence.py
+%{python3_sitelib}/%{vdsm_name}/gluster/fstab.py
+%{python3_sitelib}/%{vdsm_name}/gluster/gfapi.py
+%{python3_sitelib}/%{vdsm_name}/gluster/hooks.py
+%{python3_sitelib}/%{vdsm_name}/gluster/services.py
+%{python3_sitelib}/%{vdsm_name}/gluster/storagedev.py
+%{python3_sitelib}/%{vdsm_name}/gluster/tasks.py
+%{python3_sitelib}/%{vdsm_name}/gluster/thinstorage.py
+%{python3_sitelib}/%{vdsm_name}/rpc/vdsm-api-gluster.pickle
+%endif
+
+%changelog
+* Tue Nov 28 2023 Sandro Bonazzola <sandro.bonazzola@gmail.com> - 4.50.5.1
+- See %{_docdir}/%{vdsm_name}/ChangeLog for the complete list of Vdsm changes.

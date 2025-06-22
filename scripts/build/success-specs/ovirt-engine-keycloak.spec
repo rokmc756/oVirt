@@ -1,0 +1,151 @@
+%global __jar_repack 0
+
+%global product_name Keycloak SSO for oVirt Engine
+
+%global ovirt_engine_wildfly_data %{_datadir}/ovirt-engine-wildfly
+%global ovirt_engine_data %{_datadir}/ovirt-engine
+%global engine_group ovirt
+%global engine_user ovirt
+
+%global make_common_opts \\\
+	-j1 \\\
+	BUILD_VALIDATION=0 \\\
+	PACKAGE_NAME=%{name} \\\
+	RPM_VERSION=%{version} \\\
+	RPM_RELEASE=%{release} \\\
+	PREFIX=%{_prefix} \\\
+	DATAROOT_DIR=%{_datadir} \\\
+	LOCALSTATE_DIR=%{_localstatedir} \\\
+	%{?EXTRA_BUILD_FLAGS:EXTRA_BUILD_FLAGS="%{EXTRA_BUILD_FLAGS}"}
+
+
+
+########################################################
+#  Keycloak overlay package
+########################################################
+Name:		ovirt-engine-keycloak
+Version:	15.0.2
+Release:	6%{?dist}
+Summary:	%{product_name}
+Group:		Virtualization/Management
+License:	ASL 2.0
+URL:		http://keycloak.org
+BuildArch:	noarch
+Source:		%{name}-15.0.2.tar.gz
+
+BuildRequires:	unzip
+
+Requires:	%{name}-setup >= %{version}
+Requires:	mod_auth_openidc >= 2.3.7
+Requires:	ovirt-engine-extension-aaa-misc >= 1.1.1
+
+%description
+Keycloak SSO for oVirt Engine.
+
+########################################################
+#  Keycloak overlay setup package
+########################################################
+%package setup
+Summary:	%{product_name} setup
+Group:		Virtualization/Management
+
+BuildRequires:	python3
+BuildRequires:	python3-devel
+
+Requires:	%{name} >= 15.0.2
+Requires:	ovirt-engine-setup-plugin-ovirt-engine >= 4.5.3
+Requires:	python%{python3_pkgversion}-ovirt-setup-lib
+
+%description setup
+Keycloak SSO for oVirt Engine installation setup package.
+
+
+########################################################
+#  Package customizations
+########################################################
+%prep
+%setup -cq
+
+%build
+make %{make_common_opts}
+
+%install
+rm -fr "%{buildroot}"
+make %{make_common_opts} install DESTDIR=%{buildroot}
+
+# Compile python files
+%py_byte_compile %{__python3} %{buildroot}%{_libexecdir}/
+%py_byte_compile %{__python3} %{buildroot}%{ovirt_engine_data}/
+
+%{__python3} -m compileall -f -q -d "%{python3_sitelib}" "%{buildroot}%{python3_sitelib}"
+%{__python3} -O -m compileall -f -q -d "%{python3_sitelib}" "%{buildroot}%{python3_sitelib}"
+
+# /var creation
+install -dm 755 "%{buildroot}/%{_localstatedir}/lib/ovirt-engine-keycloak"
+
+
+# Unzip downloaded keycloak overlay package
+mkdir -p %{buildroot}%{_datadir}
+unzip -d %{buildroot}%{_datadir}/%{name} keycloak-overlay-15.0.2.zip
+
+# install Readme
+install -d -m 0755 "%{buildroot}%{_docdir}/%{name}"
+install -m 0644 "%{_builddir}/%{name}-%{version}/README.md" "%{buildroot}%{_docdir}/%{name}/README.md"
+install -m 0644 "%{_builddir}/%{name}-%{version}/keycloak_usage.md" "%{buildroot}%{_docdir}/%{name}/keycloak_usage.md"
+
+# prepare sym links from ovirt-engine-wildfly to relevant ovirt-engine-keycloak artifacts
+# that is required because keycloak overlay is supposed to be extracted inside Wildfly/EAP location
+# and for ease of future management we do not want to mix them, symlinks here is an acceptable trade off
+mkdir -p %{buildroot}%{ovirt_engine_wildfly_data }/modules/system/layers
+ln -sf %{_datadir}/%{name}/themes %{buildroot}%{ovirt_engine_wildfly_data}/themes
+ln -sf %{_datadir}/%{name}/modules/layers.conf %{buildroot}%{ovirt_engine_wildfly_data}/modules/layers.conf
+ln -sf %{_datadir}/%{name}/modules/system/layers/keycloak %{buildroot}%{ovirt_engine_wildfly_data}/modules/system/layers/keycloak
+
+mkdir -p %{buildroot}%{_datadir}/ovirt-engine-wildfly/bin/client
+ln -sf %{_datadir}/%{name}/bin/add-user-keycloak.sh %{buildroot}%{ovirt_engine_wildfly_data}/bin/add-user-keycloak.sh
+ln -sf %{_datadir}/%{name}/bin/kcadm.sh %{buildroot}%{ovirt_engine_wildfly_data}/bin/kcadm.sh
+ln -sf %{_datadir}/%{name}/bin/client/keycloak-admin-cli-15.0.2.jar %{buildroot}%{ovirt_engine_wildfly_data}/bin/client/keycloak-admin-cli-15.0.2.jar
+ln -sf %{_datadir}/%{name}/bin/client/keycloak-client-registration-cli-15.0.2.jar %{buildroot}%{ovirt_engine_wildfly_data}/bin/client/keycloak-client-registration-cli-15.0.2.jar
+
+
+%files
+%{_datadir}/%{name}/
+%{ovirt_engine_wildfly_data}/modules/layers.conf
+%{ovirt_engine_wildfly_data}/modules/system/layers/keycloak
+%{ovirt_engine_wildfly_data}/themes
+%{ovirt_engine_wildfly_data}/bin/client/keycloak-admin-cli-15.0.2.jar
+%{ovirt_engine_wildfly_data}/bin/client/keycloak-client-registration-cli-15.0.2.jar
+%{ovirt_engine_wildfly_data}/bin/add-user-keycloak.sh
+%{ovirt_engine_wildfly_data}/bin/kcadm.sh
+%{_docdir}/%{name}/
+
+%files setup
+%dir %attr(-, %{engine_user}, %{engine_group}) %{_localstatedir}/lib/ovirt-engine-keycloak/
+%{_localstatedir}/lib/ovirt-engine-keycloak/backups/
+%{ovirt_engine_data}/setup/ovirt_engine_setup/keycloak/
+%{ovirt_engine_data}/setup/plugins/*/ovirt-engine-keycloak/
+
+%changelog
+* Fri Oct 07 2022 Martin Perina <mperina@redhat.com> - 15.0.2-6
+- Set password of admin@ovirt to be engine admin password
+- packaging: setup: Filter from logs secrets from otopi answer files
+
+* Wed Aug 10 2022 Martin Perina <mperina@redhat.com> - 15.0.2-5
+- Allow custom DB credentials
+
+* Mon Jul 25 2022 Artur Socha <asocha@redhat.com> - 15.0.2-4
+- Better engine-setup summary message
+
+* Thu Jun 23 2022 Artur Socha <asocha@redhat.com> - 15.0.2-3
+- Keycloak reactivation documentation
+- Keycloak 'supported' flag initialization
+
+* Fri Jun 3 2022 Artur Socha <asocha@redhat.com> - 15.0.2-2
+- Support for activation of Keycloak SSO on existing installation
+- Fix for oVirt Provider OVN Keycloak credentials
+- Fix for oVirt Monitoring Portal Keycloak credentials
+- Support for oVirt Engine backup & restore
+
+* Wed Nov 10 2021 Artur Socha <asocha@redhat.com> - 15.0.2-1
+- Initial release
+

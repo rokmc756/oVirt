@@ -1,0 +1,276 @@
+# build condition `ovirt_use_nodejs_modules`
+#   - on by default, requires a build with `--without ovirt_use_nodejs_modules` to turn off
+#   - if on, the build uses `ovirt-engine-nodejs-modules`
+#   - if off, the build uses standard `yarn` accessing all node_modules packages directly
+%bcond_without ovirt_use_nodejs_modules
+
+Name: ovirt-engine-ui-extensions
+Summary: oVirt UI Extensions
+Version: 1.3.7
+Release: 1%{?dist}
+License: ASL 2.0
+URL: http://www.ovirt.org/
+Source: ovirt-engine-ui-extensions-1.3.7.tar.gz
+
+BuildArch: noarch
+
+# requirements for packaging/build.sh (to be included in the build container)
+BuildRequires: git
+BuildRequires: jq
+BuildRequires: rpmlint
+BuildRequires: rpm-build
+
+%if %{with ovirt_use_nodejs_modules}
+# nodejs-modules embeds yarn and requires nodejs
+BuildRequires: ovirt-engine-nodejs-modules >= 2.3.20-1
+%else
+BuildRequires: nodejs >= 14.15
+BuildRequires: yarn >= 1.22
+%endif
+
+Requires: ovirt-engine-webadmin-portal >= 4.5
+Requires: ovirt-ansible-collection >= 2.0
+
+Obsoletes: ovirt-engine-dashboard < 1.3
+Provides: ovirt-engine-dashboard = 1.3
+
+%description
+UI plugin that provides various extensions to oVirt administration UI.
+
+Extensions include:
+  - Dashboard
+  - Cluster upgrade wizard
+  - Host copy network dialog
+  - VM CPU pinning dialog
+  - Host CPU pinning dialog
+  - VM export dialog
+  - VM manage GPU dialog via vm devices
+  - VM manage GPU dialog via host devices
+  - VM migrate dialog
+  - Manage Storage Connections dialogs
+
+%prep
+
+# Unpack the source:
+%setup -q -n %{name}-%{version}
+
+%build
+
+# Set up Node.js environment with dependencies linked to ./node_modules:
+%if %{with ovirt_use_nodejs_modules}
+source %{_datadir}/ovirt-engine-nodejs-modules/setup-env.sh
+%else
+yarn install
+%endif
+
+# Build the application:
+yarn build
+
+%install
+
+# Install the files:
+mkdir -p %{buildroot}%{_datadir}/%{name}
+cp -r dist/* %{buildroot}%{_datadir}/%{name}
+cp -r ansible-playbooks %{buildroot}%{_datadir}/%{name}
+
+# Ensure that Engine ui-plugins directory exists:
+mkdir -p %{buildroot}%{_datadir}/ovirt-engine/ui-plugins
+
+# Link plugin resources to Engine ui-plugins directory:
+ln -s "%{_datadir}/%{name}/ui-extensions.json" "%{buildroot}%{_datadir}/ovirt-engine/ui-plugins"
+ln -s "%{_datadir}/%{name}/ui-extensions-resources" "%{buildroot}%{_datadir}/ovirt-engine/ui-plugins"
+
+# Ensure the Engine playbooks directory exists:
+mkdir -p %{buildroot}%{_datadir}/ovirt-engine/ansible-runner-service-project/project
+
+# Link plugin playbooks to Engine playbooks directory:
+ln -s "%{_datadir}/%{name}/ansible-playbooks/ovirt-cluster-upgrade.yml" "%{buildroot}%{_datadir}/ovirt-engine/ansible-runner-service-project/project"
+
+%files
+%{_datadir}/%{name}
+%{_datadir}/ovirt-engine/ui-plugins/ui-extensions.json
+%{_datadir}/ovirt-engine/ui-plugins/ui-extensions-resources
+%{_datadir}/ovirt-engine/ansible-runner-service-project/project/ovirt-cluster-upgrade.yml
+%doc README.adoc
+%license LICENSE
+
+%changelog
+* Sun Dec 18 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.7-1
+- Adopt the use of shadow DOM/root for react-modals
+- Github actions: update actions versions to current supported ones
+- Update dependencies of various packages:
+  isomorphic-git from 0.67.2 to 1.8.2, loader-utils from 2.0.0 to 2.0.4, minimatch from 3.0.4 to 3.1.2, qs from 6.5.2 to 6.5.3
+
+* Thu Sep 29 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.6-1
+- Export VM dialog: fix a bug for avoid blocking the export vm process in case the vm original_template is set to null
+
+* Fri Jul 22 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.5-1
+- CPU pinning dialog: add the 'Isolate Threads' cpu pinning policy
+- RHV dashboard - fix the 'Top Utilized Resources CPU' percentage values
+- RHV dashboard - Force tooltips on the DonutChart to a constant width for handling few non-Latin languages
+- Complete migration to Patternfly 4 so Patternfly 3 is no longer used, upgrade Webpack to version 5 , enable EL9 builds
+- Update dependencies of packages: moment from 2.29.2 to 2.29.4, terser from 5.14.1 to 5.14.2, minimist from 1.2.5 to 1.2.6, y18n from 4.0.0 to 4.0.3
+- Build issues: add conditional build for offline/online builds
+
+* Wed Jun 15 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.4-1
+- Cluster upgrade wizard dialog: fix the selected hosts handling bug
+- Cluster upgrade wizard dialog: fix a bug in trackUpgradeProgress to always fetch events from the last point
+- Update dependencies for various packages: moment from 2.24.0 to 2.29.2, caniuse-lite for browserslist  to version 1.0.30001346
+- I18n: pull translations for Georgian (ka-GE)
+- Github actions: always upgrade nodejs-modules
+- Build issues: use hours, minutes and seconds in the RPM name, version part
+- Build issues: mark the copr make_srpm git dir as safe (git 2.35.2 security fix)
+
+* Tue Apr 26 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.3-1
+- Fix a bug for minimizing CSS flashing of all ui-extensions dialogs
+- vGPU dialog: small code refactorings
+- vGPU dialog: show widgets even if the cluster doesn't contain any vGPU hosts
+- CPU pinning dialog: fix message's trailing zero in case of no CPU topology was found
+- I18n: update translations (fetch from Zanata, remove outdated translations)
+- I18n: add support for Georgian language as a community translation
+
+* Tue Mar 29 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.2-1
+- A new dialog is added: vm-manage-gpu for managing vGPUs as VM devices, accessible from VM-VM devices sub tab
+- A new dialog is added: host's CPU pinning dialog for viewing host's cpu topology. accessible from hosts-hosts devices sub tab
+- A new dialog is added: manage storage connection dialogs for managing iSCSI connections, accessible from the storage domains grid
+- Cluster upgrade wizard dialog: migrate the wizard to use PatternFly 4 and add to the dialog a progress tracking indication
+- Parameters passed to translated messages are now formatted in the translation layer only (not in code) and by using ICU number skeletons
+- A github action was addded such that when commits or tags lables are pushed to master, run a build
+- Fix a case of a HEAD commit having multiple tags such that existing build scripts wouldn't fail to recognize it as a tagged commit
+- Update dependencies for various packages:simple-get, ansi-regex, normalize-url and trim-off-newlines
+
+* Mon Mar 14 2022 Sharon Gratch <sgratch@redhat.com> - 1.3.1-1
+- a new dialog is added: CPU pinning dialog for a VM
+- vGPU dialog: fix the max instances
+- Export VM dialog: move button to kebab menu and rename button label
+- Cluster upgrade dialog: use correlation id for Ansible playbooks
+- RHV dashboard: add a link to the Monitoring Portal from the dashboard
+- Improve logging and error handling
+- Optimize css loading
+- Update Patternfly css import
+- Update dependencies for various packages: eslint, babel, react-intl-po, trim-off-newlines, postcss
+- Move and reordering all modal sources
+- Enable Copr builds
+- Move the project to GitHub and update the relevant documentation
+- Fix translation by using `msg` within components
+- I18n: Update Zanata configurations
+
+* Wed Jun 23 2021 Sharon Gratch <sgratch@redhat.com> - 1.2.7-1
+- Update zatana.xml to version 1.2
+- Translation update, 17-May-2021
+- Update glob-parent, path-parse, ua-parser-js and underscore libraries dependencies
+- vGPU dialog: add more instances of a card
+- vGPU dialog: add vGPU type name
+
+* Sun Apr 25 2021 Sharon Gratch <sgratch@redhat.com> - 1.2.6-1
+- Update lodash dependency to 4.17.21
+
+* Mon Mar 8 2021 Sharon Gratch <sgratch@redhat.com> - 1.2.5-1
+- Reorder Cluster Upgrade action buttons
+- Update Zanata tools to use the maven plugin
+- Remove fc30 build from STDCI
+- Upgrade patternfly and patternfly-react for both 3 and 4 versions.
+- Style PF4 modals to match PF3 modals
+- Do not auto-focus modal 'x' close button
+- Fix missing translations for dashboard and for Migrate VM dialog
+- Update bootstrap-select and datatables.net dependencies
+
+* Wed Oct 14 2020 Sharon Gratch <sgratch@redhat.com> - 1.2.4-1
+- Use ansible collection for cluster upgrade
+- Refactor PF4 component modals to use the PF4 modal
+- Reorder PF4 action buttons
+- Sort Destination host items in Migrate VM dialog
+- Add linting rules for React hooks
+- Update translations (2020-Sep-2)
+
+* Fri Aug 14 2020 Sharon Gratch <sgratch@redhat.com> - 1.2.3-1
+- Use em unit for sizing icons of the dashboard dialog
+- Display blank card instead of N/A for cluster stats on the dashboard dialog
+- Fix the cluster upgrade dialog tooltips by assuring that the container node is positioned relatively
+- Add a suggestion info text for enabling affinity check when migrating a VM on Migrate VM dialog
+- Update lodash dependency
+- Update modal code to control order of css includes, so that branding changes remain intact when a modal is open
+
+* Tue Jul 7 2020 Sharon Gratch <sgratch@redhat.com> - 1.2.2-1
+- update jquery to 3.5.1 due to HeatMap tooltip break that caused dashboard loading failure
+- fix the copy host networks functionality so that networks will be copied to single target host and not multiple hosts
+
+* Fri Jul 3 2020 Sharon Gratch <sgratch@redhat.com> - 1.2.1-1
+- Convert unit test to jest 'expect' and remove the use of `chai` assertion library
+- update translations
+- Update dependencies, including updating jquery to 3.5.0
+- Disable buttons for non managed entities
+- Add copy host networks functionality
+- Fix a bug on vGPU data provider
+- Add 'Display on' to vGPU dialog
+
+* Tue May 12 2020 Sharon Gratch <sgratch@redhat.com> - 1.2.0-1
+- update VM Migrate dialog to use Patternfly 4
+- update the Dashboard to use Patternfly 4
+- Update dependencies and drop "yarn check"
+- update translations
+- update i18n normalize and unit-tests, bump jest version
+
+* Wed Mar 25 2020 Sharon Gratch <sgratch@redhat.com> - 1.1.0-1
+- Added missing 'id' attribute to buttons
+- Update zanata server and version
+- Move dashboard sources to 'src/dashboard'
+- Update install location and fix install script path of ansible playbooks
+- Update STDCI configs
+- Update patternfly 4 dependencies
+
+* Tue Jan 28 2020 Sharon Gratch <sgratch@redhat.com> - 1.0.13-1
+- VM export dialog:  display the error returned from the backend
+- vGPU dialog: code improvements, Make vGPU table scrollable, table redesign + summary section
+
+* Wed Jan 8 2020 Sharon Gratch <sgratch@redhat.com> - 1.0.12-1
+- refactoring of VM Migrate dialog components
+- fix a bug by setting discard_snapshots explictly in code
+
+* Thu Dec 12 2019 Scott J Dickerson <sdickers@redhat.com> - 1.0.11-1
+- introduce Manage vGPU dialog
+- introduce Export VM dialog
+- adapt to breaking change in webadmin UI plugin call contract for business entities
+- enable PF4 on the project, include overrides needed to work with webadmin
+- update webpack builds, add build info to chunks and entry points
+- update STDCI to add distros fc30 adn el8
+
+* Mon Sep 16 2019 Sharon Gratch <sgratch@redhat.com> - 1.0.10-1
+- remove unused devDependency sinon
+- add `yarn intl:report` to report on multiple i18n topics
+- fix cluster upgrade dialog big margin
+- fix a bug that caused cluster upgrade dialog to be closed unexpectedly before reaching the review screen
+
+* Wed Sep 4 2019 Sharon Gratch <sgratch@redhat.com> - 1.0.9-1
+- change CI version to STDCI V2
+- use showModal in both ClusterUpgrade and VmMigrate modals
+- update dependencies
+
+* Tue Aug 27 2019 Sharon Gratch <sgratch@redhat.com> - 1.0.7-1
+- update translations
+- update dependencies (for jquery, patternfly, patternfly-react, webpack, bible etc)
+- fix typo in use_maintenance_policy
+- Convert karma/mocha/sinon/phantomjs to jest/jsdom for unit tests
+
+* Tue Jun 25 2019 Sharon Gratch <sgratch@redhat.com> - 1.0.6-1
+- update translations
+
+* Tue May 21 2019 Greg Sheremeta <gshereme@redhat.com> - 1.0.5-1
+- Fixed cluster upgrade execution timeout
+
+* Fri Mar 22 2019 Greg Sheremeta <gshereme@redhat.com> - 1.0.4-1
+- require ovirt-ansible-cluster-upgrade >= 1.1.12 to get engine events
+- check and warn if a Cluster is in cluster_maintenance
+
+* Mon Feb 4 2019 Greg Sheremeta <gshereme@redhat.com> - 1.0.3-1
+- fix spec file to properly replace ovirt-engine-dashboard on upgrade
+- update translations
+
+* Wed Jan 9 2019 Greg Sheremeta <gshereme@redhat.com> - 1.0.2-1
+- cluster upgrade wizard enhancements
+
+* Fri Dec 14 2018 Scott J Dickerson <sdickers@redhat.com> - 1.0.1-1
+- added handling for the cluster upgrade wizard ansible playbook
+
+* Thu Jun 28 2018 Vojtech Szocs <vszocs@redhat.com> - 1.0.0-1
+- created project based on ovirt-engine-dashboard master

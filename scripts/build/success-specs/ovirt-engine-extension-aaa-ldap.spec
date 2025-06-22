@@ -1,0 +1,188 @@
+%global make_common_opts \\\
+	PREFIX=%{_prefix} \\\
+	SYSCONF_DIR=%{_sysconfdir} \\\
+	DATAROOT_DIR=%{_datadir} \\\
+	DESTDIR=%{buildroot} \\\
+	PACKAGE_VERSION=%{version} \\\
+	PACKAGE_DISPLAY_NAME=%{name}-%{version}-1 \\\
+	%{nil}
+
+
+Name:		ovirt-engine-extension-aaa-ldap
+Version:	1.4.6
+Release:	1%{?dist}
+Summary:	oVirt Engine LDAP Users Management Extension
+Group:		%{ovirt_product_group}
+License:	ASL 2.0
+URL:		http://www.ovirt.org
+Source:		%{name}-%{version}.tar.gz
+
+# We need to disable automatic generation of "Requires: java-headless >= 1:11"
+# by xmvn, becase JDK 11 doesn't provide java-headless artifact, but it
+# provides java-11-headless.
+AutoReq:	no
+
+BuildArch:	noarch
+
+BuildRequires:	java-11-openjdk-devel
+BuildRequires:	maven-local
+BuildRequires:	mvn(org.apache.maven.plugins:maven-compiler-plugin)
+BuildRequires:	mvn(org.apache.maven.plugins:maven-source-plugin)
+
+BuildRequires:	mvn(com.unboundid:unboundid-ldapsdk)
+BuildRequires:	mvn(org.ovirt.engine.api:ovirt-engine-extensions-api)
+BuildRequires:	mvn(org.slf4j:slf4j-api)
+BuildRequires:	mvn(org.slf4j:slf4j-jdk14)
+
+
+Requires:	java-11-openjdk-headless >= 1:11.0.0
+Requires:	javapackages-filesystem
+Requires:	ovirt-engine-extensions-api
+Requires:	slf4j
+Requires:	slf4j-jdk14
+Requires:	unboundid-ldapsdk >= 6.0.4
+
+%description
+This package contains the oVirt Engine LDAP Users Management Extension
+to manage users stored in LDAP server.
+
+%package setup
+Summary:	oVirt Engine LDAP Users Management Extension Setup Tool
+Requires:	%{name} = %{version}-%{release}
+Requires:	bind-utils
+Requires:	python3-ldap
+Requires:	python3-otopi >= 1.9.0
+
+%description setup
+Setup package for Generic LDAP.
+
+%prep
+%setup -c -q
+
+# junit5 is not packages on EL8, let's disable it for RPM build
+%pom_remove_dep org.junit.jupiter:
+
+%build
+# Necessary to override the default for xmvn, which is JDK 8
+export JAVA_HOME="/usr/lib/jvm/java-11-openjdk"
+
+make %{make_common_opts} generate-files
+
+# Don't run tests until junit5 is available
+%mvn_build -j -f
+
+%install
+make %{make_common_opts} install
+%mvn_install
+
+
+%files -f .mfiles
+%dir %{_javadir}/%{name}
+%dir %{_datadir}/%{name}
+%dir %{_sysconfdir}/ovirt-engine-extension-aaa-ldap-setup.conf.d
+%doc README*
+%{_datadir}/%{name}/examples/
+%{_datadir}/%{name}/modules/
+%{_datadir}/%{name}/profiles/
+%{_sysconfdir}/ovirt-engine-extension-aaa-ldap-setup.conf.d/10-packaging.conf
+%{_sysconfdir}/ovirt-engine/engine.conf.d/50-ovirt-engine-extension-aaa-ldap.conf
+
+%files setup
+%{_bindir}/ovirt-engine-extension-aaa-ldap-setup
+%{_datadir}/%{name}/setup/
+
+%changelog
+* Tue Aug 02 2022 Martin Perina <mperina@redhat.com> 1.4.6-1
+- Bump unboundid-ldapsdk to 6.0.4
+
+* Wed Oct 6  2021 Martin Perina <mperina@redhat.com> 1.4.5-1
+- Don't use DNS ANY query type
+
+* Thu May 27 2021 Martin Perina <mperina@redhat.com> 1.4.4-1
+- Detect IP version from default gateway
+- Add ability to disable automatic IP version detection
+
+* Wed May 5 2021 Martin Perina <mperina@redhat.com> 1.4.3-1
+- Fix detection of IP version available
+
+* Thu Oct 22 2020 Martin Perina <mperina@redhat.com> 1.4.2-1
+- Fix special characters in password when saving to conf file
+- Open temporary files with the correct mode
+- Write configuration files with the correct mode
+- Detect IPv6 availability before using AAAA DNS records
+
+* Thu Aug 20 2020 Martin Perina <mperina@redhat.com> 1.4.1-1
+- Enable IPv6 support by default
+- Handle search value with asterisk
+
+* Fri Feb 28 2020 Martin Perina <mperina@redhat.com> 1.4.0-1
+- Moved java classes under org.ovirt.engine.extension.aaa.ldap package
+- Require OpenJDK 11
+- Use maven to build the project
+
+* Tue Aug 20 2019 Martin Perina <mperina@redhat.com> 1.3.10-1
+- Fixed bug: BZ1733111
+
+* Mon Mar 04 2019 Martin Perina <mperina@redhat.com> 1.3.9-1
+- Fixed bug: BZ1618699, BZ1455440, BZ1532568
+
+* Wed Sep 26 2018 Martin Perina <mperina@redhat.com> 1.3.8-1
+- Fixed bug: BZ1623458
+
+* Tue Feb 20 2018 Martin Perina <mperina@redhat.com> 1.3.7-1
+- Fixed bugs: BZ1538217, BZ1530642, BZ1524120
+
+* Wed Nov 15 2017 Martin Perina <mperina@redhat.com> 1.3.6-1
+- Fixed bugs: BZ1383862, BZ1465463, BZ1511120
+
+* Fri Oct 27 2017 Martin Perina <mperina@redhat.com> 1.3.5-1
+- Fixed bugs: BZ1489402
+
+* Mon Aug 28 2017 Martin Perina <mperina@redhat.com> 1.3.4-1
+- Fixed bugs: BZ1482940
+
+* Wed Aug 08 2017 Martin Perina <mperina@redhat.com> 1.3.3-1
+- Fixed bugs: BZ1462815, BZ1476980, BZ1462294, BZ1472254
+
+* Fri May 19 2017 Martin Perina <mperina@redhat.com> 1.3.2-1
+- Fixed bug: BZ1440656
+
+* Mon Feb 20 2017 Martin Perina <mperina@redhat.com> 1.3.1-1
+- Fixed bugs: BZ1413144, BZ1408678, BZ1420745, BZ1420281, BZ1409827
+
+* Fri Dec 16 2016 Martin Perina <mperina@redhat.com> 1.3.0-1
+- Fixed bugs: BZ1379000, BZ1387254, BZ1353750, BZ1393407
+
+* Mon Oct 31 2016 Martin Perina <mperina@redhat.com> 1.2.2-1
+- Fixed bug: BZ1388083
+
+* Fri Jun 30 2016 Martin Perina <mperina@redhat.com> 1.2.1-1
+- Fixed bugs: BZ1349178, BZ1349305, BZ1340380
+
+* Thu May 26 2016 Martin Perina <mperina@redhat.com> 1.2.0-1
+- Fixed bug: BZ1333878
+- Removed EL6 build support
+
+* Mon Apr 18 2016 Martin Perina <mperina@redhat.com> 1.1.4-1
+- Fixed bug: BZ1323361
+
+* Thu Mar 31 2016 Martin Perina <mperina@redhat.com> 1.1.3-1
+- Fixed bugs: BZ1313516, BZ1313583
+
+* Fri Dec 11 2015 Alon Bar-Lev <alonbl@redhat.com> 1.1.2-1
+- Release.
+
+* Thu Dec 10 2015 Alon Bar-Lev <alonbl@redhat.com> 1.1.1-1
+- Release.
+
+* Thu Oct 22 2015 Alon Bar-Lev <alonbl@redhat.com> 1.1.0-1
+- Release.
+
+* Thu Jan 15 2015 Alon Bar-Lev <alonbl@redhat.com> 1.0.2-1
+- Release.
+
+* Wed Dec 24 2014 Alon Bar-Lev <alonbl@redhat.com> 1.0.1-1
+- Release.
+
+* Mon Dec 1 2014 Alon Bar-Lev <alonbl@redhat.com> 1.0.0-1
+- Initial.

@@ -1,0 +1,502 @@
+# Copyright (C) 2017 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+%global         package_version 1.6.2
+
+%global metrics_data %{_datadir}/ovirt-engine-metrics
+%global metrics_roles_data %{_datadir}/ansible/roles/oVirt.metrics
+%global metrics_etc %{_sysconfdir}/ovirt-engine-metrics
+
+%global make_common_opts \\\
+	PREFIX=%{_prefix} \\\
+	SYSCONF_DIR=%{_sysconfdir} \\\
+	DATAROOT_DIR=%{_datadir} \\\
+	LOCALSTATE_DIR=%{_localstatedir} \\\
+	BUILD_VALIDATION=0
+
+Summary:        oVirt Engine Metrics
+Name:           ovirt-engine-metrics
+Version:        1.6.2
+Release:        1%{?release_suffix}%{?dist}
+Source0:        http://resources.ovirt.org/pub/src/ovirt-engine-metrics/ovirt-engine-metrics-1.6.2.tar.gz
+License:        Apache-2.0
+Group:          Virtualization/Management
+BuildArch:      noarch
+Url:            http://www.ovirt.org
+
+Requires:	ansible-core >= 2.12
+%if 0%{?rhel} < 9
+Requires:	python38-jmespath
+%else
+Requires:	python3-jmespath
+%endif
+
+Requires:	rhel-system-roles >= 1.11.0-1
+
+%description
+ovirt-engine-metrics allows configuring an oVirt installation to send metrics
+data to a remote metrics store.
+
+%prep
+%setup -c -q
+
+%build
+make %{make_common_opts}
+
+%install
+make %{make_common_opts} install DESTDIR="%{buildroot}"
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%license LICENSE
+%{metrics_data}
+%{metrics_roles_data}
+%{metrics_etc}
+%{metrics_etc}/config.yml.d
+%doc README.md
+
+%changelog
+* Tue Nov 28 2023 Sandro Bonazzola <sandro.bonazzola@gmail.com> - 1.6.2-1
+- Rebase on upstream 1.6.2.
+- Migrated to SPDX license.
+- Fix comparison logic in ovirt_initial_validations Ansible role https://github.com/oVirt/ovirt-engine/issues/869
+
+* Mon Oct 03 2022 Martin Perina <mperina@redhat.com> - 1.6.1-1
+- Adapt dependencies on EL9
+
+* Tue Apr 5 2022 Aviv Litman <alitman@redhat.com> - 1.6.0
+- Bug 2059521 - Upgrade to ansible-core-2.12
+
+* Mon Feb 28 2022 Aviv Litman <alitman@redhat.com> - 1.5.0
+- Bug 2025936 - metrics configuration playbooks failing due to rhel-system-role last refactor
+- Bug 1990462 - Add user name and password to ELK integration
+- Bug 2012569 - Update the LSR version
+- Bug 1804268 - Add ansible-lint, and adjust the role accordingly
+
+* Thu Sep 2 2021 Aviv Litman <alitman@redhat.com> - 1.4.4
+- Bug 1978655 - Delete the defaults certs+key paths, and update LSR version
+- Update elasticsearch_host documentation to a list
+
+* Wed Jul 28 2021 Aviv Litman <alitman@redhat.com> - 1.4.3
+- Bug 1978655 - Fix  /roles/oVirt.logging/tasks/main.yml to fit linux-system-roles
+- Bug 1985977 - Add missing configuration parameters
+
+* Tue Oct 27 2020 Shirly Radco <sradco@redhat.com> - 1.4.2.2-1
+- Bug 1880015 - Update visualization template with keyword
+
+* Tue Oct 20 2020 Shirly Radco <sradco@redhat.com> - 1.4.2.1-1
+- Bug 1889522 - fix typo in set_fact
+
+* Wed Oct 07 2020 Sandro Bonazzola <sbonazzo@redhat.com> - 1.4.2-1
+- Fixes BZ#1870133
+- Fixes BZ#1862134
+- Allow adding hosts when sending to external Elasticsearch server
+- Fixes self-obsoletion ovirt-engine-hosts-ansible-inventory obsoletes ovirt-engine-hosts-ansible-inventory
+- Dropped dependencies on ovirt-ansible-image-template and ovirt-ansible-vm-infra
+
+* Tue Jun 30 2020 Shirly Radco <sradco@redhat.com> - 1.4.1.1
+Fixed issues:
+- Bug 1827177 - Remove OCP metrics store installation
+
+* Tue Jun 09 2020 Shirly Radco <sradco@redhat.com> - 1.4.1
+Fixed issues:
+- Bug 1842260 - Missing usehttps when not using certificates
+
+* Sun Mar 22 2020 Shirly Radco <sradco@redhat.com> - 1.4.0.2
+Fixed issues:
+- automation: Replace fc29 with fc30
+- Bug 1807860 - Allow resource allocation options to be customized
+- Bug 1797023 - Fix static IP for metrics-store-installer vm
+
+* Tue Feb 18 2020 Shirly Radco <sradco@redhat.com> - 1.4.0.1
+Fixed issues:
+- automation: add el8 jobs
+- automation: remove 4.3 branch from master jobs
+
+* Wed Feb 12 2020 Shirly Radco <sradco@redhat.com> - 1.4.0
+Fixed issues:
+- Fix bug with oreg_url default
+- Replace Satellite installation using command with package
+- Enable RHSM repositories for ocp vms
+- Update qcow_url documentation
+- Bug 1685597 - Added support for configuring nics variables
+- Bug 1685597 - Added support for configuring nic_mode
+- Add rhsub_orgid to vars.yaml.template
+
+* Tue Aug 27 2019 Shirly Radco <sradco@redhat.com> - 1.3.4.1
+Fixed issues:
+- Bug 1723453 - Update resize disk size timeout parameter
+- Bug 1724483 - Shorten ovirt metrics store installation time
+
+* Thu Aug 08 2019 Shirly Radco <sradco@redhat.com> - 1.3.4
+Fixed issues:
+- Add host_name to the cloud_init OpenShift VM provisioning
+- Update elasticsearch output if conditions
+- Bug 1719304 - Add send_targets_only variable
+- Bug 1719304 - Removed rsyslog_default check and config
+- Fix bug in openshift_logging_es_memory_limit
+
+* Tue Jul 30 2019 Shirly Radco <sradco@redhat.com> - 1.3.3.3
+Fixed issues:
+- packaging: spec: require ansible >= 2.8.3
+- Bug 1717954 - Update libvirt.conf content
+- Bug 1683157 - Hide sensitive data when running in verbose mode
+- Bug 1731871 - Wait for reboot to complete validation.
+- Add host_name to the cloud_init bastion VM provisioning.
+
+* Wed Jul 10 2019 Shirly Radco <sradco@redhat.com> - 1.3.3.2
+Fixed issues:
+- Bug 1698888 - Extract public key from bastion VM using fetch command
+- Bug 1727064 - Install Ansible 2.7 from configmanagement repo
+- packaging: spec: require ovirt-ansible-vm-infra >= 1.1.19
+- Bug 1717954 - Remove libvirt.conf that breaks collectd config
+
+* Tue Jul 02 2019 Shirly Radco <sradco@redhat.com> - 1.3.3.1
+Fixed issues:
+- Revert commit #68 Remove the check for rsyslog_default
+- Bug 1717974 - Fix bug in oVirt formatting of ovirt.entity field
+
+* Tue Jun 25 2019 Shirly Radco <sradco@redhat.com> - 1.3.3
+Fixed issues:
+- Bug 1721581 - packaging: spec: require ansible >= 2.8.1
+- Bug 1715519 - Pass extra args separately
+- Bug 1683157 - Remove unrequired debug messages
+
+* Tue Jun 18 2019 Shirly Radco <sradco@redhat.com> - 1.3.2
+Fixed issues:
+- Bug 1715511 - Update README for openshift_distribution value
+- yamllint: fixed reported indentation issues
+- Bug 1716692 - Fix ignored_nics in ovirt-guest-agent.conf
+- packaging: spec: require ansible >= 2.7
+- Bug 1719304 - Remove the check for rsyslog_default
+- Bug 1717974 - Add ovirt.entity to ovirt collectd records
+- Bug 1715513 - build: update spec with minimal version of required packages
+
+* Tue May 28 2019 Shirly Radco <sradco@redhat.com> - 1.3.1.1
+Fixed issues:
+- Add flag that allows setting openshift_disable_check
+- Bug 1713223 - Add lock_timeout to yum due to locking issue
+
+* Wed May 15 2019 Shirly Radco <sradco@redhat.com> - 1.3.1
+Fixed issues:
+- Update ovirt_env_name text in config.yml.example
+- Bug 1683157 - Add no_log to metrics_store_post_installation.yaml.template
+- Bug 1696795 - Remove comment for "Get bastion ssh public key" task
+- Update index in dashboards templates
+- Removed default value for ovirt_cluster_name in config file
+- Bug 1679227 - Wait for bastion FQDN
+- Add metrics-store-installer machine to /etc/hosts
+- Bug 1704721 - Install and enable required packages
+- Bug 1680647 - Configure Collectd based on collect_ovirt_collectd_metrics
+- Update logs index_prefix inconsistent naming
+- Bug 1686572 - Remove unrequired step of copying engine_id_rsa
+
+* Mon Apr 08 2019 Shirly Radco <sradco@redhat.com> - 1.3.0.2
+Fixed issues:
+- Bug 1697521 - Fix bug with root_password in vars.yaml
+
+* Mon Apr 08 2019 Shirly Radco <sradco@redhat.com> - 1.3.0.1
+Fixed issues:
+- Bug 1683157 - Remove generated openshift_logging_admin_password
+
+* Sun Apr 07 2019 Shirly Radco <sradco@redhat.com> - 1.3.0
+Fixed issues:
+- Bug 1696179 - Fix bug with initial validations for fluentd
+- Bug 1683353 - Remove generated vms root password in vars.yaml
+- Bug 1693784 - Add packages required for installing openshift origin
+- Bug 1695067 - Clone openshift-ansible 3.11 repo for origin installation
+- Add condition for setting qcow_url
+
+* Thu Mar 28 2019 Shirly Radco <sradco@redhat.com> - 1.2.1.3
+Fixed issues:
+- Bug 1693560 - Fix failure in initial validations
+- Bug 1693569 - Add missing variables to vars.yaml
+
+* Wed Mar 27 2019 Shirly Radco <sradco@redhat.com> - 1.2.1.2
+Fixed issues:
+- Remove openshift_distribution from config file
+- Update default cluster name from default to Default
+- Bug 1683157 - Disabled logging for sensitive tasks
+- lint: main: fix double space after colon
+- lint: main: ANSIBLE0011 All tasks should be named
+- lint: fix too many spaces after|before colon
+- Bug 1691363 - Fix bug with curator update
+- automation: Add git hash to milestone builds
+- Bug 1677996 - Encrypt passwords for Metrics installation
+- Bug 1692702 - Set default qcow_url only for Origin
+- Update mandatory variables and variables with default
+- Bug 1677246 - Fix validations when running on an isolated machine
+- remove openshift_logging_admin_password from config.yml file
+- Bug 1693296 - Fix support for non default template disk storage
+
+* Thu Mar 21 2019 Shirly Radco <sradco@redhat.com> - 1.2.1.1
+Fixed issues:
+- Add missing default logging_namespace to role
+- Fix issue with missing bastion ip address
+- Updated US source: Fixed oVirt logs parsing
+- Update elasticsearch_host config file documentation
+- Fix bug in deploying fluentd
+- Removed unneeded comments from metrics store installation README
+
+* Mon Mar 18 2019 Shirly Radco <sradco@redhat.com> - 1.2.1
+Fixed issues:
+- Update metrics store installation role
+- Bug 1687492 - Fix bug with template_nics in origin-on-ovirt role
+- Fixing defaults and additional issue
+- Fixed issue with rsyslog certificates paths
+- Update bug with bastion machine ssh key population
+- Update ovirt_template_disk_size default size in README
+- Fix bug when user does not have ssh key
+- Moved post installation tasks to installation playbook
+- Add master dns record to bastion and engine machine if all-in-one
+
+* Wed Jan 30 2019 Shirly Radco <sradco@redhat.com> - 1.2.0.3
+Fixed issues:
+- Update upstream sources
+
+* Tue Jan 22 2019 Shirly Radco <sradco@redhat.com> - 1.2.0.2
+Fixed issues:
+- Bug 1666886 - Update logging role tasks
+- Bug 1666886 - Updated ovirt_vds_cluster_name fact
+- Update write_rsyslog to write_syslog
+- Fixed condition to use logging_output_type
+- Update OpenShift ansible inventory 3.11
+- Updated initial validations messages
+
+* Thu Jan 10 2019 Shirly Radco <sradco@redhat.com> - 1.2.0.1
+Fixed issues:
+- Bug 1629437 - Add write_rsyslog plugin installation and verification
+
+* Tue Jan 08 2019 Shirly Radco <sradco@redhat.com> - 1.2.0
+Fixed issues:
+- Bug 1629437 - Add linux-system-roles logging role
+- Bug 1629437 - Makefile: Add linux-system-roles-logging
+- Bug 1629437 - Replace Fluentd with Rsyslog role
+- Bug 1629437 - Update collectd write_rsyslog HostTags
+- Bug 1629437 - Upadte logging_outputes variable
+- Bug 1629437 - restart collectd if rsyslog is running
+- Bug 1629437 - update collectd restart handler
+- Bug 1629437 - Update logging role facts
+
+* Thu Nov 22 2018 Shirly Radco <sradco@redhat.com> - 1.2.0
+Fixed issues:
+- Bug 1645515 - Update default openshift version to 3.11
+- Bug 1651588 - Stop metrics role if Fluentd package is unavailable
+
+* Mon Oct 08 2018 Shirly Radco <sradco@redhat.com> - 1.2.0
+Fixed issues:
+- Bug 1620595 - Update READMEs update variables
+- Bug 1607127 - Update default openshift version to 3.9
+- Bug 1607127 - Update latest ansible-inventory files naming
+- Bug 1593646 - Add ansible-inventory files for OpenShift 3.10
+- Remove unneeded mux and memory limit related parameters
+- Bug 1576391 - Remove trailing / from paths in config
+- Bug 1585666 - metrics: update fluentd metrics buffer
+
+* Tue Jun 05 2018 Shirly Radco <sradco@redhat.com> - 1.1.5.1
+Fixed issues:
+- Bug 1585963 - Add EOL to collectd 05-global-configuration.conf file
+
+* Wed May 23 2018 Shirly Radco <sradco@redhat.com> - 1.1.5
+Fixed issues:
+- Bug 1573784 - Update fluentd forward plugin settings
+- Bug 1572508 - Update fluentd buffer output settings
+
+* Wed Apr 25 2018 Shirly Radco <sradco@redhat.com> - 1.1.4.2
+Fixed issues:
+- Bug 1475681 - Update dashboards - add vms widgets
+- Bug 1475681 - update dashboards to use ovirt.class
+- Bug 1475681 - Update kibana widgets names and axeses names
+
+* Wed Apr 18 2018 Shirly Radco <sradco@redhat.com> - 1.1.4.1
+Fixed issues:
+- Bug 1566523 - Ignore failure when externalIP is already set
+- collectd: update write_http and general configs
+- Bug 1566519 - Update tests used as filters due to deprecation
+- Bug 1560240 - Updated ovirt_elasticsearch_mounted_storage_path
+
+* Tue Apr 10 2018 Shirly Radco <sradco@redhat.com> - 1.1.4
+Fixed issues:
+- Bug 1561927 - fix timezone for logs parsing
+- Bug 1563681 - Added ansible-inventory 3.9
+
+* Wed Mar 28 2018 Shirly Radco <sradco@redhat.com> - 1.1.3.4
+Fixed issues:
+- Bug 1559042 - remove OpenShift memory and disk check flags
+- Bug 1560922 - Added the metrics_store machine to the --scope
+- Validate ovirt-env-name parameter is set
+- Bug 1560240 - updated openshift_logging_elasticsearch_hostmount_path
+
+* Tue Mar 13 2018 Shirly Radco <sradco@redhat.com> - 1.1.3.3
+Fixed issues:
+- Bug 1549163 - Remove use of end_play and fail module
+- Bug 1549163 - fix bug in initial validations
+- ansible: separate add-metrics-store-host role
+- ansible: group roles
+- Bug 1542973 - Updated get-installation-files role
+- Merge metrics-store-setup sub-roles
+- Merge ovirt-metrics-installation sub-roles
+- Bug 1506176 - Update manage-services readme
+- Bug 1475681 - Add add-dashboards-examples role
+
+* Fri Feb 23 2018 Shirly Radco <sradco@redhat.com> - 1.1.3.2
+Fixed issues:
+- Bug 1547711 - ansible: End playbook based on initial validations
+
+* Tue Feb 20 2018 Shirly Radco <sradco@redhat.com> - 1.1.3.1
+Fixed issues:
+- Add metrics store host to in-memory inventory
+- Bug 1545559 - Assign an IP Address to the Elasticsearch Service
+- Bug 1529271 - replace vdsm stats with collectd virt plugin
+- Bug 1542973 - fixed bug in initial validations
+
+* Thu Feb 15 2018 Shirly Radco <sradco@redhat.com> - 1.1.3
+Fixed issues:
+- Bug 1530919 - ansible: add config.yml.d directory
+- Bug 1507294 - ansible: set metrics store certificates params
+- Bug 1507294 - fluentd: handle undefined indexes uuids
+- Bug 1540261 - ansible: avoid logging private key
+- Bug 1507294 - ansible: update ovirt-metrics-store-setup role
+- Bug 1542973 - ansible: add role to copy required files
+- Bug 1520126 - ansible: Added tasks to configure curator
+
+* Tue Jan 23 2018 Shirly Radco <sradco@redhat.com> - 1.1.2.2
+Fixed issues:
+- Bug 1506178 - Fix configure metrics script help message
+
+* Wed Jan 17 2018 Shirly Radco <sradco@redhat.com> - 1.1.2.1
+Fixed issues:
+- Bug 1534240 - fluentd: filter out vdsm hosts metrics
+- Bug 1506178 - Fix short help (-h) parameter
+
+* Wed Jan 10 2018 Shirly Radco <sradco@redhat.com> - 1.1.2 rc1
+Fixed issues:
+- Bug 1511549 - collectd: add role that reads engine variables
+- Bug 1514927 - fluentd: add role that reads engine variables
+- Bug 1523068 - fluentd: add file output to fluentd client role
+- Bug 1514927 - ansible: Updated ovirt metrics repo structure
+- Bug 1529295 - collectd: Add root fs disk space for the engine
+- Bug 1514927 - Provide a compatibility link to configure_ovirt_machines_for_metrics.sh
+- Bug 1532196 - fluentd: add engine_fqdn to host logs
+- Bug 1514927 - fluentd: fix condition for fluentd_elasticsearch_host
+
+* Wed Nov 29 2017 Shirly Radco <sradco@redhat.com> - 1.1.1 rc1
+Fixed issues:
+- Bug 1513418 - fluentd: add  cluster name to host logs
+- Bug 1488014 - ansible: log the ansible metrics run to a log file
+
+* Tue Nov 14 2017 Shirly Radco <sradco@redhat.com> - 1.1.1 beta2
+Fixed issues:
+- Bug 1478695 - collectd: add global configurtion role
+- Bug 1490258 - fluentd:fix bug in engine.log parsing
+- Bug 1506458 - fluentd: add support for fluent-plugin-elasticsearch
+- Bug 1506458 - Update fluentd role README file
+- Bug 1475900 - fluentd: collect vdsm.log
+- Bug 1508484 - collectd: add collection of ovirt-engine-dwh process
+- Bug 1458700 - collectd: collect postgresql to processes plugin
+- Bug 1471949 - collectd: update collectd conf structure
+- Bug 1508480 - collectd: collect statistics about mom process
+- Bug 1508480 - collectd: update process name from mom to momd
+- Bug 1508481 - collectd: collect statistics about supervdsm process
+- Bug 1475900 - Update collection to collect vdsm.log by default
+
+* Sun Oct 29 2017 Shirly Radco <sradco@redhat.com> - 1.1.1 beta1
+Fixed issues:
+- Bug 1469104 - fluentd: stop collecting hosts stats from vdsm
+- Bug 1477866 - collectd: update swap plugin parameters
+- Bug 1471833 - Allow passing extra opts to ansible
+- Bug 1477083 - fluentd: Added cluster name
+- Bug 1475707 - refactor metrics ansible playbook
+- Bug 1468895 - add manage services playbook
+- Bug 1471833 - remove configure_ovirt_hosts_for_metrics.sh
+- Bug 1492188, 1493002 - fluentd: set buffer configurations
+- Bug 1475795 - fluentd: add role to set system configurations
+- metrics: remove firewall role
+- documentation: add readme to metrics roles
+
+* Wed Jul 26 2017 Shirly Radco <sradco@redhat.com> - 1.1.0
+Fixed issues:
+- Bug 1462500 - validate ovirt_env_name
+- Bug 1468894 - update jinja2 templates
+- Bug 1471949 - refactor collectd conf file
+- Bug 1469119 - remove collectd-virt plugin collection
+- Bug 1446480 - collectd: load uptime plugin
+- Bug 1462500 - added the ovirt_env_name to fail messages
+
+
+* Mon Jul 10 2017 Shirly Radco <sradco@redhat.com> - 1.0.5
+Fixed issues:
+- Bug 1438821 - ansible.cfg: Disable host key checking
+- refactor playbook.yml
+- Bug 1459431 - fluentd: add pos_file to engine.log
+- Bug 1451490 - Check and install missing collectd and fluentd packages
+- Bug 1464737 - fluentd: restart collectd only if fluentd is running
+- Bug 1468208 - ansible: upgrade packages to latest
+- Bug 1451490 - ansible: update package installation to run first
+
+* Tue Jun 20 2017 Shirly Radco <sradco@redhat.com> - 1.0.4.3
+Fixed issues:
+- Bug 1461322 - roles: fluentd: change group to root
+- Bug 1419858 - Add ovirt_env_name
+- Bug 1458735 - fluentd: update engine logs format to support multiline
+- Bug 1419858 - Pass ENGINE_FQDN
+- fluentd: add default value to ovirt_env_name
+
+* Wed Jun 07 2017 Shirly Radco <sradco@redhat.com> - 1.0.4.2
+Fixed issues:
+- Bug 1459425 - fluentd: parse engine.log time as iso8601
+
+* Tue Jun 06 2017 Shirly Radco <sradco@redhat.com> - 1.0.4.1
+Fixed issues:
+- Bug 1459015 - fluentd: added keep_time_key to the logs parser
+
+* Mon Jun 05 2017 Shirly Radco <sradco@redhat.com> - 1.0.4
+Fixed issues:
+- Bug 1429861 - Pass engine db credentials to collectd-postgresql
+- Bug 1429861 - create_collectd_pg_pass.sh: Fix path for selinux fcontext
+- Bug 1456238 - fluentd: added ipv4 and ipv6 to records
+- Bug 1434575 - fluentd:update hosts and engine to use nest plugin
+- Bug 1434315 - fluentd: added post processing for all records
+- Bug 1458682 - Exit and notify the user config.yml is missing
+- Bug 1418659 - fluentd:added engine.log to the fluentd configuration
+
+* Tue Apr 25 2017 Shirly Radco <sradco@redhat.com> - 1.0.3
+Fixed issues:
+- Bug 1439536 - fluentd:fixed hosts.elapsed_time type_instance
+- Bug 1439544 - fluentd:fixed parsing of statsd hosts nics and storage
+- fluentd: added prefix to the statsd value field
+- Bug 1438863 - collectd: Fixed processes plugin configurations
+- Bug 1435993 - collectd: updated engine processes plugin
+
+
+* Tue Apr 04 2017 Shirly Radco <sradco@redhat.com> - 1.0.2
+Fixed issues:
+- Bug 1434836 - fixed bug in statsd parsing
+- Bug 1436087 - update the postgresql plugin queries
+- Bug 1436001 - move postgresql plugin to a separate file
+- Bug 1429875 - move apache plugin to a separate file
+
+* Tue Mar 21 2017 Shirly Radco <sradco@redhat.com> - 1.0.1
+Fixed issues:
+- Bug 1410044 - Support configuring collectd/fluentd on the engine
+- Bug 1424997 - fluentd:update hosts and engine ovirt-processing.conf
+- Bug 1434570 - collectd: load postgresql plugin on engine machine
+- Bug 1434573 - collectd: load apache plugin
+
+* Sun Feb 12 2017 Shirly Radco <sradco@redhat.com> - 1.0.0-0.0.master
+- initial packaging
+

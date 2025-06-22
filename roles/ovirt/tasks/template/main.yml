@@ -1,0 +1,6 @@
+---
+- name: Create Template
+  import_tasks: template/create-template.yml
+  tags: create, install
+  when: inventory_hostname in groups['engine']
+

@@ -1,5 +1,5 @@
 NET_RANGE="192.168.2"
-for i in `seq 1 7`
+for i in `seq 5 8`
 do
 
     sudo ping -c 1 $_NET_RANGE.17$i

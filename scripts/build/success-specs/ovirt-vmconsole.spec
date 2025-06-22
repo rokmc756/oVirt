@@ -1,0 +1,273 @@
+%global package_version 1.0.9-3
+
+%global selinuxtype targeted
+%global moduletype contrib
+%global modulename ovirt_vmconsole
+
+%global __python %{__python3}
+
+Summary:	oVirt VM console
+Name:		ovirt-vmconsole
+Version:	1.0.9
+Release:	3%{?release_suffix}%{?dist}
+License:	GPL-2.0-or-later
+URL:		https://www.ovirt.org
+Source:		https://resources.ovirt.org/pub/src/%{name}/%{name}-%{package_version}.tar.gz
+
+BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildRequires:	checkpolicy
+BuildRequires:	gcc
+BuildRequires:	gettext
+BuildRequires:	openssh-clients
+BuildRequires:	openssh-server
+BuildRequires:	selinux-policy-devel
+BuildRequires:  selinux-policy
+BuildArch:	noarch
+%{?selinux_requires}
+
+BuildRequires:	python3-devel
+Requires:	python3
+
+Requires(post):		libselinux-utils
+Requires(preun):	libselinux-utils
+Requires(postun):	libselinux-utils
+
+Requires(pre):		shadow-utils
+Requires(preun):	policycoreutils
+Requires(post):		policycoreutils-python3
+Requires(postun):	policycoreutils-python3
+
+%description
+oVirt VM console proxy
+
+%package host
+Summary:	oVirt VM console host components
+
+Requires:	%{name} = %{version}-%{release}
+Requires:	openssh-server
+
+Requires(post):		libselinux-utils
+Requires(preun):	libselinux-utils
+
+Requires(post):		policycoreutils-python3
+Requires(postun):	policycoreutils-python3
+
+BuildRequires:		systemd
+Requires(post):		systemd
+Requires(preun):	systemd
+Requires(postun):	systemd
+
+%description host
+oVirt VM console host components
+
+%package proxy
+Summary:	oVirt VM console proxy components
+
+Requires:	%{name} = %{version}-%{release}
+Requires:	openssh-clients
+
+Requires(post):		libselinux-utils
+Requires(preun):	libselinux-utils
+
+Requires(post):		policycoreutils-python3
+Requires(postun):	policycoreutils-python3
+
+BuildRequires:		systemd
+Requires(post):		systemd
+Requires(preun):	systemd
+Requires(postun):	systemd
+
+%description proxy
+oVirt VM console proxy components
+
+%pre
+getent group %{name} >/dev/null || \
+	groupadd -r %{name}
+getent passwd %{name} >/dev/null || \
+	useradd \
+		-r \
+		-g %{name} \
+		-c "oVirt VM Console" \
+		-s /bin/sh \
+		-d %{_datadir}/%{name}/empty \
+		%{name}
+%selinux_relabel_pre -s %{selinuxtype}
+
+# [policy-priority]
+# keep priority (-P) consistent between install and uninstall to avoid silent failure for removal on %postun
+# 400 is just the old default, no reason to change it.
+%post
+%selinux_modules_install -s %{selinuxtype} -p 400 %{_datadir}/selinux/packages/ovirt-vmconsole/%{modulename}.pp
+
+# per https://fedoraproject.org/wiki/Packaging:Scriptlets#Syntax
+# this happens on uninstall - recommended by
+# https://fedoraproject.org/wiki/PackagingDrafts/SELinux_Independent_Policy#The_.25post_Section
+%postun
+if [ $1 -eq 0 ]; then
+    # see [policy-priority]
+    %selinux_modules_uninstall -s %{selinuxtype} -p 400 %{modulename}
+fi
+
+# [ordering]
+# see https://fedoraproject.org/wiki/Packaging:Scriptlets#Ordering
+%posttrans
+%selinux_relabel_post -s %{selinuxtype}
+
+# [ignore-errors]
+# see https://fedoraproject.org/wiki/PackagingDrafts/SELinux_Independent_Policy#Port_Labeling
+#
+# per https://fedoraproject.org/wiki/Packaging:Scriptlets#Syntax it seems that it is preferred
+# to hide and swallow non-zero exit codes in the scriptlets. Let it be.
+%post host
+if %{_sbindir}/selinuxenabled ; then
+	semanage port -a -t ovirt_vmconsole_host_port_t -p tcp 2223 &> /dev/null || :
+fi
+%systemd_post ovirt-vmconsole-host-sshd.service
+
+# see [ignore-errors]
+%postun host
+if %{_sbindir}/selinuxenabled ; then
+	semanage port -d -p tcp 2223 &> /dev/null || :
+fi
+%systemd_postun ovirt-vmconsole-host-sshd.service
+
+# see [ordering]
+%posttrans host
+%selinux_relabel_post -s %{selinuxtype}
+
+%preun host
+%systemd_preun ovirt-vmconsole-host-sshd.service
+
+# see [ignore-errors]
+%post proxy
+if %{_sbindir}/selinuxenabled ; then
+	semanage port -a -t ovirt_vmconsole_proxy_port_t -p tcp 2222 &> /dev/null || :
+fi
+%systemd_post ovirt-vmconsole-proxy-sshd.service
+
+# see [ignore-errors]
+%postun proxy
+if %{_sbindir}/selinuxenabled ; then
+	semanage port -d -p tcp 2222 &> /dev/null || :
+fi
+%systemd_postun ovirt-vmconsole-proxy-sshd.service
+
+# see [ordering]
+%posttrans proxy
+%selinux_relabel_post -s %{selinuxtype}
+
+%preun proxy
+%systemd_preun ovirt-vmconsole-proxy-sshd.service
+
+%prep
+%setup -q -n %{name}-%{package_version}
+
+%build
+%configure \
+	--with-local-version="%{name}-%{version}-%{release}" \
+	%{?conf}
+make %{?_smp_mflags}
+make -f /usr/share/selinux/devel/Makefile -C selinux-ovirt_vmconsole
+
+%install
+rm -rf "%{buildroot}"
+make %{?_smp_mflags} install DESTDIR="%{buildroot}"
+# install policy modules
+install -d %{buildroot}%{_datadir}/selinux/packages/ovirt-vmconsole
+install -m 0644 selinux-ovirt_vmconsole/%{modulename}.pp %{buildroot}%{_datadir}/selinux/packages/ovirt-vmconsole
+
+#
+# workaround rpmlint warnings
+#
+find "%{buildroot}" -name .keep -exec rm {} \;
+
+#
+# Register services
+#
+install -dm 755 "%{buildroot}%{_unitdir}"
+install -m 644 "src/ovirt-vmconsole-host/ovirt-vmconsole-host-sshd/ovirt-vmconsole-host-sshd.systemd" "%{buildroot}%{_unitdir}/ovirt-vmconsole-host-sshd.service"
+install -m 644 "src/ovirt-vmconsole-proxy/ovirt-vmconsole-proxy-sshd/ovirt-vmconsole-proxy-sshd.systemd" "%{buildroot}%{_unitdir}/ovirt-vmconsole-proxy-sshd.service"
+
+%files
+%dir %{_datadir}/%{name}
+%dir %{_sysconfdir}/%{name}
+%dir %{_datadir}/%{name}/empty
+%dir %{python3_sitelib}/ovirt_vmconsole
+%{python3_sitelib}/ovirt_vmconsole/__init__.py*
+%{python3_sitelib}/ovirt_vmconsole/common/
+%exclude %{python3_sitelib}/ovirt_vmconsole/__pycache__/*
+%{_datadir}/selinux/packages/ovirt-vmconsole/%{modulename}.pp
+%{_docdir}/%{name}/
+%{_sysconfdir}/pki/%{name}/
+
+%files host
+%config(noreplace) %{_datadir}/ovirt-vmconsole/ovirt-vmconsole-host/ovirt-vmconsole-host-sshd/sshd_config
+%{_datadir}/%{name}/ovirt-vmconsole-host/
+%{_libexecdir}/ovirt-vmconsole-host-*
+%{_sysconfdir}/%{name}/ovirt-vmconsole-host/
+%{python_sitelib}/ovirt_vmconsole/ovirt_vmconsole_host_*/
+%{_unitdir}/ovirt-vmconsole-host-sshd.service
+
+%files proxy
+%{_datadir}/%{name}/ovirt-vmconsole-proxy/
+%{_libexecdir}/ovirt-vmconsole-proxy-*
+%{_sysconfdir}/%{name}/ovirt-vmconsole-proxy/
+%{python_sitelib}/ovirt_vmconsole/ovirt_vmconsole_proxy_*/
+%{_unitdir}/ovirt-vmconsole-proxy-sshd.service
+
+%changelog
+* Tue Nov 28 2023 Sandro Bonazzola <sandro.bonazzola@gmail.com> - 1.0.9-3
+- Rebuilt for spec change (PR#5)
+- Do not overwrite the ovirt-vmconsole-proxy sshd_config file during updates
+- Migrate License tag to SPDX
+
+* Mon May 16 2022 Milan Zamazal <mzamazal@redhat.com> - 1.0.9-2
+- rebuild for updated SELinux
+
+* Thu Nov 26 2020 Milan Zamazal <mzamazal@redhat.com> - 1.0.9-1
+- fix SELinux denials present in logs
+
+* Thu Feb 27 2020 Milan Zamazal <mzamazal@redhat.com> - 1.0.8-1
+- el8 related fixes
+
+* Tue Sep 10 2019 Michal Skrivanek <michal.skrivanek@redhat.com> - 1.0.7-3
+- move automation to stdci v2 jobs
+
+* Mon Oct 29 2018 Tomasz Baranski <tbaransk@redhat.com> - 1.0.6-2
+- fix packaging for Python2/3
+
+* Thu Oct 11 2018 Francesco Romani <fromani@redhat.com> - 1.0.6-1
+- docs/proxy: guide users about how to disconnect
+- deps: don't depend on python-argparse anymore
+
+* Tue Apr 24 2018 Francesco Romani <fromani@redhat.com> - 1.0.5-4
+- build: packaging: fix dependecies
+
+* Tue Apr 24 2018 Francesco Romani <fromani@redhat.com> - 1.0.5-2
+- build: update and fix build automation and infrastructure
+
+* Thu Feb 15 2018 Francesco Romani <fromani@redhat.com> - 1.0.5-1
+- packaging: ensure selinux-policy-targeted is installed
+- packaging: remove python-argparse dependency on fc26
+- licensing: bump copyright year
+- licensing: add copyright boilerplate
+
+* Fri Jul 29 2016 Francesco Romani <fromani@redhat.com> - 1.0.4-1
+- packaging: make the package installable/upgradable even with
+             SELinux disabled.
+- packaging: avoid scary but harmless ValueError on upgrade
+- docs: document how to change the TCP ports used by this package
+
+* Mon May 30 2016 Francesco Romani <fromani@redhat.com> - 1.0.3-1
+- minor socketproxy improvements for easier troubleshooting
+
+* Tue Apr 26 2016 Francesco Romani <fromani@redhat.com> - 1.0.2-1
+- fix packaging dependencies  on custom base images (oVirt Node)
+
+* Tue Mar 08 2016 Francesco Romani <fromani@redhat.com> - 1.0.1-1
+- ssh: ClientAlive/ServerAlive to expedite connection closure.
+- fix python2/3 compatibility
+
+* Thu Oct 15 2015 Alon Bar-Lev <alonbl@redhat.com> - 1.0.0-1
+- Initial add.

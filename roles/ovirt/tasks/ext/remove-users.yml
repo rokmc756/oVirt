@@ -1,0 +1,8 @@
+---
+- name: Remove User from Authorization Provider
+  ovirt_user:
+    name: jomoon
+    domain: internalkeycloak-authz
+    auth: "{{ _ovirt.engine.auth }}"
+    state: absent
+
