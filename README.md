@@ -195,8 +195,7 @@ $ make storage r=remove s=domain c=nfs
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Execute just a specific set of steps]
 ```
 
-* Resolution
-- There was a NIC which has priority 100 in my case. You can find which NIC has this priority with this command,  ip -j rule | jq. This issue could be resolved by modifying network configuration in my script ( ovirt-netconfig.sh ) as below
+* Resolution - There was a NIC which has priority 100 in my case. You can find which NIC has this priority with this command,  ip -j rule | jq. This issue could be resolved by modifying network configuration in my script ( ovirt-netconfig.sh ) as below
 ```
 # SEQ,NET,TABLE,PRIO,MTU,NETNUM,NETWORK_RANGE,ROUTABLE,AUTOCONN,CONNPERM
 INFO_TABLE="
@@ -218,8 +217,7 @@ INFO_TABLE="
 [ INFO  ] ok: [localhost -> localhost]
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Create destination directory]
 ```
-* Resolution
-- https://syk531.tistory.com/120
+* Resolution - https://syk531.tistory.com/120
 ```
 sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
 sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
