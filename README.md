@@ -128,7 +128,6 @@ $ make ovirt r=uninstall s=pkgs
 $ make ovirt r=setup s=engine
 $ make ovirt r=setup s=sdk
 
-
 or
 $ make ovirt r=clean s=engine
 ```
