@@ -19,20 +19,20 @@ Supported OS for ansible target host should be prepared with package repository 
 
 ### Prepare Ansible Host to run this Ansible Playbook
 * MacOS
-```
+```bash
 $ xcode-select --install
 $ brew install ansible
 $ brew install https://raw.githubusercontent.com/kadwanev/bigboybrew/master/Library/Formula/sshpass.rb
 ```
 
 * Fedora/CentOS/RHEL
-```
+```bash
 $ yum install ansible
 ```
 
 ### Setup NFS Server / iSCSI Target / Postgres Database for oVirt Engine
 #### 1) Configure Inventory
-```
+```ini
 $ vi ansible-hosts=co9
 
 [all:vars]
@@ -60,11 +60,12 @@ co9-node07      ansible_ssh_host=192.168.2.177
 ```
 
 #### 2) Initialize Hosts to create user and ssh keys for exchaning them among all hosts
-```
+```bash
 $ make hosts r=init s=all
 ```
+
 #### 3) Configure oVirt Ansible Collection
-```
+```bash
 $ ansible-galaxy collection install ovirt.ovirt
 $ ansible-galaxy collection list | grep ovirt
 ovirt.ovirt                              3.2.0
@@ -81,16 +82,15 @@ $ pip3 install ovirt-engine-sdk-python
 
 ### Setup Postgres Database / iSCSI Target / NFS Server
 #### 1) Install/Uninstall Postgres Database for oVirt Engine/DW Remote Database
-```
+```bash
 $ make postgres r=install s=all
 
 or
 $ make postgres r=uninstall s=all
 ```
 
-
 #### 2) Setup/Remove iSCSI Target for oVirt iSCSI Storage Domain
-```
+```bash
 $ make storage r=setup s=iscsi c=target
 
 or
@@ -98,17 +98,16 @@ $ make storage r=remove s=iscsi c=target
 ```
 
 #### 3) Setup/Remove NFS Server for oVirt NFS Storage Domain
-```
+```bash
 $ make storage r=setup s=nfs c=server
 
 or
 $ make storage r=remove s=nfs c=server
 ```
 
-
 ### Deploy Open Virtualization
 #### 1) Enable/Disable oVirt Package Repository
-```
+```bash
 $ make ovirt r=enable s=repo
 
 or
@@ -116,7 +115,7 @@ $ make ovirt r=disable s=repo
 ```
 
 #### 2) Install/Uninstall oVirt Packages
-```
+```bash
 $ make ovirt r=install s=pkgs
 
 or
@@ -124,7 +123,7 @@ $ make ovirt r=uninstall s=pkgs
 ```
 
 #### 3) Setup/Remove oVirt Engine
-```
+```bash
 $ make ovirt r=setup s=engine
 $ make ovirt r=setup s=sdk
 
@@ -133,7 +132,7 @@ $ make ovirt r=clean s=engine
 ```
 
 #### 4) Create/Delete oVirt Data Center
-```
+```bash
 $ make ovirt r=create s=dc
 
 or
@@ -141,7 +140,7 @@ $ make ovirt r=delete s=dc
 ```
 
 #### 5) Create/Delete oVirt Cluster
-```
+```bash
 $ make ovirt r=create s=cluster
 
 or
@@ -149,7 +148,7 @@ $ make ovirt r=delete s=cluster
 ```
 
 #### 6) Add/Remove oVirt Hosts
-```
+```bash
 $ make ovirt r=add s=host
 
 or
@@ -157,7 +156,7 @@ $ make ovirt r=remove s=host
 ```
 
 #### 7) Add/Remove oVirt Storage Domain
-```
+```bash
 $ make storage r=add s=domain c=nfs
 $ make storage r=add s=domain c=iscsi
 $ make storage r=add s=domain c=gluster
@@ -181,7 +180,7 @@ $ make storage r=remove s=domain c=nfs
 
 ### Errors
 #### Hosted Engine Setup Error
-- https://lists.ovirt.org/archives/list/users@ovirt.org/thread/QTQ4QMGOJLS6GNRVXI47QKI3ZULVGLOA/
+* https://lists.ovirt.org/archives/list/users@ovirt.org/thread/QTQ4QMGOJLS6GNRVXI47QKI3ZULVGLOA/
 ```
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Fetch IPv6 CIDR for virbr0]
 [ INFO  ] skipping: [localhost]
@@ -195,10 +194,10 @@ $ make storage r=remove s=domain c=nfs
 [ INFO  ] Cleaning temporary resources
 [ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Execute just a specific set of steps]
 ```
+
 * Resolution
 - There was a NIC which has priority 100 in my case. You can find which NIC has this priority with this command,  ip -j rule | jq. This issue could be resolved by modifying network configuration in my script ( ovirt-netconfig.sh ) as below
 ```
-
 # SEQ,NET,TABLE,PRIO,MTU,NETNUM,NETWORK_RANGE,ROUTABLE,AUTOCONN,CONNPERM
 INFO_TABLE="
 0,192.168.0.17,200,103,$MTU0,1s0,$NET0,yes,$GW0,yes,no
@@ -206,6 +205,7 @@ INFO_TABLE="
 2,192.168.2.17,202,101,$MTUx,8s0,$NET2,no,$GW2,yes,no
 "
 ```
+
 #### Repoitory Failure
 ```
 [ INFO  ] TASK [ovirt.ovirt.engine_setup : Install required packages for oVirt Engine deployment]
@@ -223,10 +223,9 @@ INFO_TABLE="
 ```
 sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
 sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
-```
-and
-Disable centos-ceph-pacific repository
 
+and Disable centos-ceph-pacific repository
+```
 
 #### Python Crypt module is deperecated
 ```
@@ -243,11 +242,6 @@ Disable centos-ceph-pacific repository
 [ ERROR ] b'by setting deprecation_warnings=False in ansible.cfg.\n'
 [ ERROR ] Failed to execute stage 'Closing up': Failed executing ansible-playbook
 [ INFO  ] Stage: Clean up
-[ INFO  ] Cleaning temporary resources
-[ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Execute just a specific set of steps]
-[ INFO  ] ok: [localhost]
-[ INFO  ] TASK [ovirt.ovirt.hosted_engine_setup : Force facts gathering]
-[ INFO  ] ok: [localhost]
 ```
 
 #### Postgres Options Required when using Remote Database
@@ -261,6 +255,7 @@ Disable centos-ceph-pacific repository
            'max_connections' is currently '100'. It is required to be at least '150'.
          postgresql.conf is usually in /var/lib/pgsql/data,  or somewhere under /etc/postgresql* . You have to restart PostgreSQL after making these changes.
 ```
+
 #### DISPERSE Mode is not supported
 ```
 ==> vdsm.log <==
@@ -272,8 +267,8 @@ Disable centos-ceph-pacific repository
 
 #### Error in Creating Gluster Storage Domain
 - https://unix.stackexchange.com/questions/774769/io-uring-with-fio-fails-on-rocky-9-3-w-kernel-5-14-0-362-18-1-el9-3-x86-64
-$ tail -f /var/log/glusterfs/rhev-data-center-mnt-glusterSD-*.log
 ```
+$ tail -f /var/log/glusterfs/rhev-data-center-mnt-glusterSD-*.log
 r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfile-server=co9-node01 --volfile-server=co9-node02 --volfile-server=co9-node03 --volfile-id=/distvol01 /rhev/data-center/mnt/glusterSD/192.168.2.171:_distvol01}]
 [2025-02-27 14:32:44.497650 +0000] I [glusterfsd.c:2447:daemonize] 0-glusterfs: Pid of current running process is 28546
 [2025-02-27 14:32:44.505608 +0000] I [MSGID: 101190] [event-epoll.c:667:event_dispatch_epoll_worker] 0-epoll: Started thread with index [{index=0}]
@@ -284,7 +279,6 @@ r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfi
 [2025-02-27 14:32:44.508747 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-0: parent translators are ready, attempting connect on transport []
 [2025-02-27 14:32:44.510421 +0000] I [MSGID: 114020] [client.c:2336:notify] 0-distvol01-client-1: parent translators are ready, attempting connect on transport []
 ```
-
 
 #### glusterfs geo replication not installed
 ```
@@ -297,9 +291,7 @@ r=/usr/sbin/glusterfs --process-name fuse --volfile-server=192.168.2.171 --volfi
 [2025-02-28 06:00:23.652635 +0000] I [cli-rpc-ops.c:767:gf_cli_get_volume_cbk] 0-cli: Received resp to get vol: 0
 [2025-02-28 06:00:23.653123 +0000] I [input.c:31:cli_batch] 0-: Exiting with: 0
 
-
 $ dnf install -y glusterfs-geo-replication
-
 ```
 
 #### oVirt Engine Web UI not Responding
@@ -310,7 +302,9 @@ $ dnf install -y glusterfs-geo-replication
 If there are nothing in /etc/iscsi directory, vdsm create new initiatorname.iscsi. So, make empty directory to /etc/iscsi in order to solve this problem.
 
 #### Prepare CentOS for Hosted Engine
+```
 1) yum repo
 mirror -> valut
 disable ceph repo
+```
 
